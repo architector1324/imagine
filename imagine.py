@@ -39,9 +39,6 @@ pipe = None
 
 @app.route('/generate_image', methods=['POST'])
 def generate_image():
-    if pipe is None:
-        return jsonify({"error": "Model not loaded. Server might be misconfigured or encountered an error during startup."}), 500
-
     data = request.get_json()
     if not data:
         return jsonify({"error": "Invalid JSON"}), 400
@@ -52,19 +49,26 @@ def generate_image():
         return jsonify({"error": "Prompt is required"}), 400
 
     # get prameters
+    model = data.get('model', DEFAULT_MODEL)
     width = data.get('width', 512)
     height = data.get('height', 512)
     num_steps = data.get('num_steps', 16)
     guidance = data.get('guidance', 7.5)
-    sampler_name = data.get('sampler', 'DPM++ 2S')
+    sampler = data.get('sampler', 'DPM++ 2S')
     seed = data.get('seed', random.randint(0, 2**64 - 1))
     neg_prompt = data.get('neg', None)
 
     # check sampler
-    if sampler_name not in SAMPLERS:
-        return jsonify({"error": f"Invalid sampler '{sampler_name}'. Available samplers: {list(SAMPLERS.keys())}"}), 400
+    if sampler not in SAMPLERS:
+        return jsonify({"error": f"Invalid sampler '{sampler}'. Available samplers: {list(SAMPLERS.keys())}"}), 400
 
-    pipe.scheduler = SAMPLERS[sampler_name].from_config(pipe.scheduler.config)
+    # load model
+    pipe = diffusers.StableDiffusionPipeline.from_single_file(model, torch_dtype=DEFAULT_FP_PREC)
+
+    pipe.unet.set_attn_processor(diffusers.models.attention_processor.AttnProcessor2_0())
+    pipe.scheduler = SAMPLERS[sampler].from_config(pipe.scheduler.config)
+
+    pipe.to(DEFAULT_DEVICE, DEFAULT_FP_PREC)
 
     # init generator
     gen = torch.Generator(DEFAULT_DEVICE).manual_seed(seed)
@@ -74,7 +78,7 @@ def generate_image():
             'prompt': prompt,
             'neg_prompt': neg_prompt,
             'seed': seed,
-            'sampler': sampler_name,
+            'sampler': sampler,
             'w': width,
             'h': height,
             'num_steps': num_steps,
@@ -109,11 +113,11 @@ def generate_image():
 
 # main
 if __name__ == '__main__':
-    pipe = diffusers.StableDiffusionPipeline.from_single_file(DEFAULT_MODEL, torch_dtype=DEFAULT_FP_PREC)
+    # pipe = diffusers.StableDiffusionPipeline.from_single_file(DEFAULT_MODEL, torch_dtype=DEFAULT_FP_PREC)
 
-    pipe.unet.set_attn_processor(diffusers.models.attention_processor.AttnProcessor2_0())
-    pipe.scheduler = SAMPLERS['DPM++ 2S'].from_config(pipe.scheduler.config)
+    # pipe.unet.set_attn_processor(diffusers.models.attention_processor.AttnProcessor2_0())
+    # pipe.scheduler = SAMPLERS['DPM++ 2S'].from_config(pipe.scheduler.config)
 
-    pipe.to(DEFAULT_DEVICE, DEFAULT_FP_PREC)
+    # pipe.to(DEFAULT_DEVICE, DEFAULT_FP_PREC)
 
     app.run(host='0.0.0.0', port=5000, debug=False)

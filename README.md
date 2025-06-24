@@ -28,7 +28,7 @@ Imagine is ideal for developers who need to quickly add Stable Diffusion image g
 
 2.  **Install dependencies:**
     ```bash
-    pip install torch diffusers transformers accelerate flask Pillow
+    pip install torch diffusers transformers accelerate flask Pillow argparse requests base64
     ```
     (Ensure your `torch` installation is compatible with your hardware, e.g., for CUDA: `pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118`)
 
@@ -50,6 +50,7 @@ Imagine is ideal for developers who need to quickly add Stable Diffusion image g
     ```bash
     curl -X POST -H "Content-Type: application/json" \
          -d '{
+             "model": "<path to>/dreamshaper_8.safetensors"
              "prompt": "a photo of an astronaut riding a horse on mars, epic, cinematic, detailed",
              "width": 768,
              "height": 512,
@@ -61,4 +62,46 @@ Imagine is ideal for developers who need to quickly add Stable Diffusion image g
          http://localhost:5000/generate_image | jq .
     ```
 
-    The response will be a JSON object containing the `image_base64` string and the `seed_used`.
+    The response will be a JSON object containing the `img` string and the `seed`.
+
+### Imagine CLI
+
+### Description
+
+A simple command-line script for generating images based on a text prompt using the `diffusers` library.
+
+### Usage
+
+```
+usage: imagine-cli.py [-m MODEL] [-o OUTPUT] [-w WIDTH] [-h HEIGHT] [-n NUM_STEPS] [-g GUIDANCE] [-s SAMPLER] [--seed SEED] [--neg NEG] [--help] prompt [prompt ...]
+
+SD image generator
+
+positional arguments:
+  prompt                Prompt for model
+
+options:
+  -m, --model MODEL     SD model
+  -o, --output OUTPUT   Output image
+  -w, --width WIDTH     Output image width
+  -h, --height HEIGHT   Output image height
+  -n, --num_steps NUM_STEPS
+                        Number of steps
+  -g, --guidance GUIDANCE
+                        Guidance scale
+  -s, --sampler SAMPLER
+                        SD Sampler ['DDIM', 'Euler', 'Euler a', 'Heun', 'LMS', 'DPM++ 2M', 'DPM++ 2S', 'DPM++ SDE', 'DPM2', 'DPM2 a']
+  --seed SEED           Seed
+  --neg NEG             Negative prompt
+  --help
+```
+
+#### Example Usage
+
+```bash
+./imagine-cli.py 'a photo of an astronaut riding a horse on mars, epic, cinematic, detailed' -w 768 -h 512 -n 25 -g 7.0 -s 'DPM++ 2M' --neg 'ugly, deformed, blurry, low quality'
+```
+
+### Output
+
+The script will save the generated image to the current directory with a filename based on the prompt or a timestamp.
