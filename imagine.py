@@ -37,8 +37,8 @@ SAMPLERS = {
 app = Flask(__name__)
 pipe = None
 
-@app.route('/generate_image', methods=['POST'])
-def generate_image():
+@app.route('/generate', methods=['POST'])
+def generate():
     data = request.get_json()
     if not data:
         return jsonify({"error": "Invalid JSON"}), 400
@@ -52,9 +52,9 @@ def generate_image():
     model = data.get('model', DEFAULT_MODEL)
     width = data.get('width', 512)
     height = data.get('height', 512)
-    num_steps = data.get('num_steps', 16)
-    guidance = data.get('guidance', 7.5)
-    sampler = data.get('sampler', 'DPM++ 2S')
+    num_steps = data.get('num_steps', 25)
+    guidance = data.get('guidance', 7.0)
+    sampler = data.get('sampler', 'DPM++ 2M')
     seed = data.get('seed', random.randint(0, 2**64 - 1))
     neg_prompt = data.get('neg', '')
 
@@ -119,7 +119,7 @@ if __name__ == '__main__':
     # pipe = diffusers.StableDiffusionPipeline.from_single_file(DEFAULT_MODEL, torch_dtype=DEFAULT_FP_PREC)
 
     # pipe.unet.set_attn_processor(diffusers.models.attention_processor.AttnProcessor2_0())
-    # pipe.scheduler = SAMPLERS['DPM++ 2S'].from_config(pipe.scheduler.config)
+    # pipe.scheduler = SAMPLERS['DPM++ 2M'].from_config(pipe.scheduler.config)
 
     # pipe.to(DEFAULT_DEVICE, DEFAULT_FP_PREC)
 

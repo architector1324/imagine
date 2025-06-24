@@ -10,7 +10,7 @@ import requests
 from PIL import Image
 
 
-IMAGINE_URL = 'http://localhost:5000/generate_image'
+IMAGINE_URL = 'http://localhost:5000/generate'
 DEFAULT_MODEL = '/home/arch/AI/models/dreamshaper_8.safetensors'
 SAMPLERS = ['DDIM', 'Euler', 'Euler a', 'Heun', 'LMS', 'DPM++ 2M', 'DPM++ 2S', 'DPM++ SDE', 'DPM2', 'DPM2 a']
 
@@ -22,10 +22,10 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output', default=None, type=str, help='Output image')
     parser.add_argument('-w', '--width', default=512, type=int, help='Output image width')
     parser.add_argument('-h', '--height', default=512, type=int, help='Output image height')
-    parser.add_argument('-n', '--num_steps', default=16, type=int, help='Number of steps')
-    parser.add_argument('-g', '--guidance', default=7.5, type=float, help='Guidance scale')
+    parser.add_argument('-n', '--num_steps', default=25, type=int, help='Number of steps')
+    parser.add_argument('-g', '--guidance', default=7.0, type=float, help='Guidance scale')
     # parser.add_argument('-d', '--denoise_strength', default=0.8, type=float, help='Denoising strength (only if `--img` provided)')
-    parser.add_argument('-s', '--sampler', default='DPM++ 2S', type=str, help=f'SD Sampler {SAMPLERS}')
+    parser.add_argument('-s', '--sampler', default='DPM++ 2M', type=str, help=f'SD Sampler {SAMPLERS}')
     # parser.add_argument('-i', '--img', default=None, type=str, help='Input image')
     parser.add_argument('--seed', default=random.randint(0, 2**64 - 1), type=int, help='Seed')
     parser.add_argument('--neg', default='', type=str, help='Negative prompt')
