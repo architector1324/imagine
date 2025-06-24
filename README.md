@@ -105,3 +105,96 @@ options:
 ### Output
 
 The script will save the generated image to the current directory with a filename based on the prompt or a timestamp.
+
+## Advanced Deployment: Running as a Systemd Service
+
+For persistent and reliable operation, you can set up **Imagine** as a `systemd` service. This ensures the server starts automatically on boot and restarts in case of crashes.
+
+**1. Create Symlinks and Ensure Executability:**
+
+Ensure both your server script (`imagine.py`) and CLI utility script (`imagine-cli.py`) are executable and symlinked to a common `PATH` directory like `/usr/bin/`.
+
+```bash
+# Make the scripts executable
+chmod +x /path/to/imagine/imagine.py
+chmod +x /path/to/imagine/imagine-cli.py
+
+# Create symlinks
+# Replace `/path/to/imagine` with the actual path to your project directory if different
+sudo ln -s /path/to/imagine/imagine.py /usr/bin/imagine
+sudo ln -s /path/to/imagine/imagine-cli.py /usr/bin/imagine-cli
+```
+
+**2. Create the Systemd Service File:**
+
+Create a file named `imagine.service` in `/etc/systemd/system/`:
+
+```bash
+sudo nano /etc/systemd/system/imagine.service
+```
+
+Paste the following content into the file:
+
+```ini
+[Unit]
+Description=Imagine: Stable Diffusion Image Generation Server
+After=network.target syslog.target
+
+[Service]
+# REPLACE 'arch' WITH YOUR LINUX USERNAME!
+# Run the service as your current user.
+# This simplifies permissions as the script and model are likely in your home directory.
+User=arch
+
+# The command to execute when the service starts.
+# Ensure /usr/bin/imagine points to your main server script (imagine.py).
+ExecStart=/usr/bin/imagine
+
+# Restart the service if it crashes
+Restart=on-failure
+RestartSec=5s
+
+# Standard output and error will be directed to the systemd journal for easy debugging
+StandardOutput=journal
+StandardError=journal
+
+# Type of service: simple (default) or forking
+Type=simple
+
+[Install]
+# This unit should be started when the system reaches multi-user.target (normal boot)
+WantedBy=multi-user.target
+```
+
+**Important Notes:**
+*   **Replace `arch` with your actual Linux username!**
+*   Ensure `/usr/bin/imagine` symlink correctly points to your **server script** (`imagine.py`).
+
+**3. Enable and Start the Service:**
+
+After saving the `imagine.service` file:
+
+```bash
+# Reload systemd to recognize the new service
+sudo systemctl daemon-reload
+
+# Enable the service to start on boot
+sudo systemctl enable imagine.service
+
+# Start the service immediately
+sudo systemctl start imagine.service
+```
+
+**4. Check Service Status and Logs:**
+
+To verify that the service is running correctly:
+
+```bash
+sudo systemctl status imagine.service
+```
+
+To view real-time logs for debugging:
+
+```bash
+journalctl -u imagine.service -f
+```

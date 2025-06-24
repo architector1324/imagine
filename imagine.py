@@ -56,7 +56,7 @@ def generate_image():
     guidance = data.get('guidance', 7.5)
     sampler = data.get('sampler', 'DPM++ 2S')
     seed = data.get('seed', random.randint(0, 2**64 - 1))
-    neg_prompt = data.get('neg', None)
+    neg_prompt = data.get('neg', '')
 
     # check sampler
     if sampler not in SAMPLERS:
@@ -91,9 +91,12 @@ def generate_image():
             height=height,
             num_inference_steps=num_steps,
             guidance_scale=guidance,
-            negative_prompt=neg_prompt,
+            negative_prompt=[neg_prompt],
             generator=gen,
         ).images[0]
+
+        del pipe
+        torch.cuda.empty_cache()
 
         # image to base64
         buffer = io.BytesIO()

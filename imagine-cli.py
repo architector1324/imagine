@@ -3,6 +3,7 @@
 import io
 import base64
 import random
+import datetime
 import argparse
 import requests
 
@@ -18,7 +19,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='SD image generator', add_help=False)
 
     parser.add_argument('-m', '--model', default=DEFAULT_MODEL, type=str, help='SD model')
-    parser.add_argument('-o', '--output', default='out.png', type=str, help='Output image')
+    parser.add_argument('-o', '--output', default=None, type=str, help='Output image')
     parser.add_argument('-w', '--width', default=512, type=int, help='Output image width')
     parser.add_argument('-h', '--height', default=512, type=int, help='Output image height')
     parser.add_argument('-n', '--num_steps', default=16, type=int, help='Number of steps')
@@ -27,7 +28,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--sampler', default='DPM++ 2S', type=str, help=f'SD Sampler {SAMPLERS}')
     # parser.add_argument('-i', '--img', default=None, type=str, help='Input image')
     parser.add_argument('--seed', default=random.randint(0, 2**64 - 1), type=int, help='Seed')
-    parser.add_argument('--neg', default=None, type=str, help='Negative prompt')
+    parser.add_argument('--neg', default='', type=str, help='Negative prompt')
     # parser.add_argument('--stream', default=None, type=int, help='Stream steps samples to output image')
     parser.add_argument('prompt', nargs='+', type=str, help='Prompt for model')
     parser.add_argument('--help', action='help')
@@ -37,7 +38,7 @@ if __name__ == '__main__':
     try:
         payload = {
             'model': args.model,
-            'prompt': 'a photo of a cyberpunk city at night, neon lights, rain, high detail, 8k',
+            'prompt': args.prompt,
             'width': args.width,
             'height': args.height,
             'num_steps': args.num_steps,
@@ -54,9 +55,10 @@ if __name__ == '__main__':
         if 'img' in result:
             img_data = base64.b64decode(result['img'])
             image = Image.open(io.BytesIO(img_data))
+            filename = args.output if args.output else f'{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
 
-            image.save(args.output)
-            print(f'Image saved as {args.output} with seed: {result.get('seed')}')
+            image.save(filename)
+            print(f'Image saved as {filename} with seed: {result.get('seed')}')
         elif 'error' in result:
             print(f'Server error: {result['error']}')
             if 'details' in result:
