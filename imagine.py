@@ -1,5 +1,6 @@
 #!/bin/python
 
+import os
 import io
 import json
 import queue
@@ -17,6 +18,8 @@ from flask import Flask, request, jsonify, Response, stream_with_context
 DEFAULT_MODEL = '/home/arch/AI/models/dreamshaper_8.safetensors'
 DEFAULT_FP_PREC = torch.float32
 DEFAULT_DEVICE = 'cpu'
+
+os.environ['HF_HUB_OFFLINE'] = '1'
 
 dev = DEFAULT_DEVICE
 fp_prec = DEFAULT_FP_PREC
