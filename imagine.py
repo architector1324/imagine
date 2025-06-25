@@ -119,7 +119,7 @@ def generate():
 
         pipe.unet.set_attn_processor(diffusers.models.attention_processor.AttnProcessor2_0())
         pipe.scheduler = SAMPLERS[sampler].from_config(pipe.scheduler.config)
-        pipe.safety_checker = lambda images, clip_input: (images, False)
+        pipe.safety_checker = lambda images, clip_input: (images, None)
 
         pipe.to(dev, fp_prec)
 

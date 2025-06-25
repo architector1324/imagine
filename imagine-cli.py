@@ -60,21 +60,36 @@ if __name__ == '__main__':
             'strength': args.strength
         }
 
+        meta = {
+            'meta': payload,
+            'out': ''
+        }
+
         response = requests.post(IMAGINE_URL, json=payload, stream=args.stream)
         response.raise_for_status()
 
         filename = args.output if args.output else f'{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
+        meta_filename = f'{filename}.json'
 
+        steps = 0
         for msg in response.iter_lines():
             result = json.loads(msg)
             # print(result)
 
             if 'img' in result:
+                seed = result.get('seed')
                 img_data = base64.b64decode(result['img'])
                 image = Image.open(io.BytesIO(img_data))
 
+                meta['meta']['seed'] = seed
+                meta['out'] = result['img']
+
                 image.save(filename)
-                print(f'Image saved as {filename} with seed: {result.get('seed')}')
+                with open(meta_filename, 'w') as f:
+                    f.write(json.dumps(meta, indent=2, ensure_ascii=False))
+
+                print(f'Image saved [{steps}/{args.num_steps}]: {filename}')
+                steps += 1
             elif 'error' in result:
                 print(f'Server error: {result['error']}')
                 if 'details' in result:
