@@ -1,6 +1,7 @@
 #!/bin/python
 
 import io
+import json
 import base64
 import random
 import datetime
@@ -29,7 +30,7 @@ if __name__ == '__main__':
     # parser.add_argument('-i', '--img', default=None, type=str, help='Input image')
     parser.add_argument('--seed', default=random.randint(0, 2**64 - 1), type=int, help='Seed')
     parser.add_argument('--neg', default='', type=str, help='Negative prompt')
-    # parser.add_argument('--stream', default=None, type=int, help='Stream steps samples to output image')
+    parser.add_argument('--stream', default=None, type=int, help='Stream steps samples to output image')
     parser.add_argument('prompt', nargs='+', type=str, help='Prompt for model')
     parser.add_argument('--help', action='help')
 
@@ -46,24 +47,29 @@ if __name__ == '__main__':
             'sampler': args.sampler,
             'seed': args.seed,
             'neg': args.neg,
+            'stream': args.stream
         }
 
-        response = requests.post(IMAGINE_URL, json=payload)
+        response = requests.post(IMAGINE_URL, json=payload, stream=args.stream)
         response.raise_for_status()
 
-        result = response.json()
-        if 'img' in result:
-            img_data = base64.b64decode(result['img'])
-            image = Image.open(io.BytesIO(img_data))
-            filename = args.output if args.output else f'{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
+        filename = args.output if args.output else f'{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
 
-            image.save(filename)
-            print(f'Image saved as {filename} with seed: {result.get('seed')}')
-        elif 'error' in result:
-            print(f'Server error: {result['error']}')
-            if 'details' in result:
-                print(f'Details: {result['details']}')
-    
+        for msg in response.iter_lines():
+            result = json.loads(msg)
+            # print(result)
+
+            if 'img' in result:
+                img_data = base64.b64decode(result['img'])
+                image = Image.open(io.BytesIO(img_data))
+
+                image.save(filename)
+                print(f'Image saved as {filename} with seed: {result.get('seed')}')
+            elif 'error' in result:
+                print(f'Server error: {result['error']}')
+                if 'details' in result:
+                    print(f'Details: {result['details']}')
+
     except requests.exceptions.ConnectionError as e:
         print(f'Could not connect to the server. Is it running? Error: {e}')
     except requests.exceptions.RequestException as e:

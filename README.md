@@ -43,7 +43,8 @@ This enables integration from **anywhere**: command-line scripts, Python applica
 
 5.  **Run the server:**
     ```bash
-    python imagine.py
+    python imagine.py --host '0.0.0.0' -p 5000 -d cpu -f 32
+    # python imagine.py
     ```
     The server will start on `http://0.0.0.0:5000/`.
 
@@ -76,7 +77,7 @@ A simple command-line script for generating images based on a text prompt using 
 ### Usage
 
 ```
-usage: imagine-cli.py [-m MODEL] [-o OUTPUT] [-w WIDTH] [-h HEIGHT] [-n NUM_STEPS] [-g GUIDANCE] [-s SAMPLER] [--seed SEED] [--neg NEG] [--help] prompt [prompt ...]
+usage: imagine [-m MODEL] [-o OUTPUT] [-w WIDTH] [-h HEIGHT] [-n NUM_STEPS] [-g GUIDANCE] [-s SAMPLER] [--seed SEED] [--neg NEG] [--stream STREAM] [--help] prompt [prompt ...]
 
 SD image generator
 
@@ -96,6 +97,7 @@ options:
                         SD Sampler ['DDIM', 'Euler', 'Euler a', 'Heun', 'LMS', 'DPM++ 2M', 'DPM++ 2S', 'DPM++ SDE', 'DPM2', 'DPM2 a']
   --seed SEED           Seed
   --neg NEG             Negative prompt
+  --stream STREAM       Stream steps samples to output image
   --help
 ```
 

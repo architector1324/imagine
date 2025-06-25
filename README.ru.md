@@ -44,7 +44,8 @@
 
 5.  **Запустите сервер:**
     ```bash
-    python imagine.py
+    python imagine.py --host '0.0.0.0' -p 5000 -d cpu -f 32
+    # python imagine.py
     ```
     Сервер запустится по адресу `http://0.0.0.0:5000/`.
 
@@ -77,26 +78,27 @@
 ### Использование
 
 ```
-usage: imagine-cli.py [-m MODEL] [-o OUTPUT] [-w WIDTH] [-h HEIGHT] [-n NUM_STEPS] [-g GUIDANCE] [-s SAMPLER] [--seed SEED] [--neg NEG] [--help] prompt [prompt ...]
+usage: imagine [-m MODEL] [-o OUTPUT] [-w WIDTH] [-h HEIGHT] [-n NUM_STEPS] [-g GUIDANCE] [-s SAMPLER] [--seed SEED] [--neg NEG] [--stream STREAM] [--help] prompt [prompt ...]
 
-Генератор изображений SD
+SD image generator
 
-Позиционные аргументы:
-  prompt                Подсказка для модели
+positional arguments:
+  prompt                Prompt for model
 
-Опции:
-  -m, --model MODEL     Модель SD
-  -o, --output OUTPUT   Выходное изображение
-  -w, --width WIDTH     Ширина выходного изображения
-  -h, --height HEIGHT   Высота выходного изображения
+options:
+  -m, --model MODEL     SD model
+  -o, --output OUTPUT   Output image
+  -w, --width WIDTH     Output image width
+  -h, --height HEIGHT   Output image height
   -n, --num_steps NUM_STEPS
-                        Количество шагов
+                        Number of steps
   -g, --guidance GUIDANCE
-                        Коэффициент управляемости (Guidance scale)
+                        Guidance scale
   -s, --sampler SAMPLER
-                        Семплер SD ['DDIM', 'Euler', 'Euler a', 'Heun', 'LMS', 'DPM++ 2M', 'DPM++ 2S', 'DPM++ SDE', 'DPM2', 'DPM2 a']
-  --seed SEED           Сид (seed)
-  --neg NEG             Отрицательная подсказка
+                        SD Sampler ['DDIM', 'Euler', 'Euler a', 'Heun', 'LMS', 'DPM++ 2M', 'DPM++ 2S', 'DPM++ SDE', 'DPM2', 'DPM2 a']
+  --seed SEED           Seed
+  --neg NEG             Negative prompt
+  --stream STREAM       Stream steps samples to output image
   --help
 ```
 
