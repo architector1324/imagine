@@ -1,4 +1,4 @@
-#!/bin/python
+#!/usr/bin/python
 
 import os
 import io
@@ -25,16 +25,16 @@ dev = DEFAULT_DEVICE
 fp_prec = DEFAULT_FP_PREC
 
 SAMPLERS = {
-    'DDIM': diffusers.DDIMScheduler,
-    'Euler': diffusers.EulerDiscreteScheduler,
-    'Euler a': diffusers.EulerAncestralDiscreteScheduler,
-    'Heun': diffusers.HeunDiscreteScheduler,
-    'LMS': diffusers.LMSDiscreteScheduler,
-    'DPM++ 2M': diffusers.DPMSolverMultistepScheduler,
-    'DPM++ 2S': diffusers.DPMSolverSinglestepScheduler,
-    'DPM++ SDE': diffusers.DPMSolverSinglestepScheduler,
-    'DPM2': diffusers.KDPM2DiscreteScheduler,
-    'DPM2 a': diffusers.KDPM2AncestralDiscreteScheduler
+    'ddim': diffusers.DDIMScheduler,
+    'euler': diffusers.EulerDiscreteScheduler,
+    'euler a': diffusers.EulerAncestralDiscreteScheduler,
+    'heun': diffusers.HeunDiscreteScheduler,
+    'lms': diffusers.LMSDiscreteScheduler,
+    'dpm++ 2m': diffusers.DPMSolverMultistepScheduler,
+    'dpm++ 2s': diffusers.DPMSolverSinglestepScheduler,
+    'dpm++ sde': diffusers.DPMSolverSinglestepScheduler,
+    'dpm2': diffusers.KDPM2DiscreteScheduler,
+    'dpm2 a': diffusers.KDPM2AncestralDiscreteScheduler
 }
 
 app = Flask(__name__)
@@ -93,7 +93,7 @@ def generate():
         height = data.get('height', 512)
         num_steps = data.get('num_steps', 25)
         guidance = data.get('guidance', 7.0)
-        sampler = data.get('sampler', 'DPM++ 2M')
+        sampler = data.get('sampler', 'dpm++ 2m')
         seed = data.get('seed', random.randint(0, 2**64 - 1))
         neg_prompt = data.get('neg', '')
         stream = data.get('stream', None)
@@ -119,6 +119,7 @@ def generate():
 
         pipe.unet.set_attn_processor(diffusers.models.attention_processor.AttnProcessor2_0())
         pipe.scheduler = SAMPLERS[sampler].from_config(pipe.scheduler.config)
+        pipe.safety_checker = lambda images, clip_input: (images, False)
 
         pipe.to(dev, fp_prec)
 
@@ -152,7 +153,7 @@ def generate():
                 img = cb_queue.get()
                 if img is None:
                     break
-                yield f'{json.dumps({'img': img, 'seed': seed})}\n'
+                yield f'{json.dumps({"img": img, "seed": seed})}\n'
 
             # wait final output
             image = res_queue.get()
@@ -167,7 +168,7 @@ def generate():
 
             # answer
             print("Image generated and encoded successfully.")
-            yield f'{json.dumps({'img': img_base64, 'seed': seed})}\n'
+            yield f'{json.dumps({"img": img_base64, "seed": seed})}\n'
 
         except Exception as e:
             print(f"Error during image generation: {e}")
