@@ -10,6 +10,7 @@ import argparse
 import threading
 import diffusers
 
+from PIL import Image
 from flask import Flask, request, jsonify, Response, stream_with_context
 
 # settings
@@ -36,7 +37,7 @@ SAMPLERS = {
 app = Flask(__name__)
 pipe = None
 
-def run_pipe(prompt, width, height, num_steps, guidance, neg_prompt, gen, stream, pipe, cb_queue, res_queue):
+def run_pipe(prompt, width, height, num_steps, guidance, strength, neg_prompt, img, gen, stream, pipe, cb_queue, res_queue):
     # sample callback
     def sample_cb(iter, t, latents):
         with torch.no_grad():
@@ -59,7 +60,9 @@ def run_pipe(prompt, width, height, num_steps, guidance, neg_prompt, gen, stream
         height=height,
         num_inference_steps=num_steps,
         guidance_scale=guidance,
+        strength=strength,
         negative_prompt=[neg_prompt],
+        image=img,
         generator=gen,
         callback = sample_cb if stream else None,
         callback_steps=stream,
@@ -91,13 +94,25 @@ def generate():
         seed = data.get('seed', random.randint(0, 2**64 - 1))
         neg_prompt = data.get('neg', '')
         stream = data.get('stream', None)
+        img = data.get('img', None)
+        strength = data.get('strength', 0.8)
 
         # check sampler
         if sampler not in SAMPLERS:
             return jsonify({"error": f"Invalid sampler '{sampler}'. Available samplers: {list(SAMPLERS.keys())}"}), 400
 
         # load model
-        pipe = diffusers.StableDiffusionPipeline.from_single_file(model, torch_dtype=fp_prec)
+        pipe = None
+        input_img = None
+
+        if img:
+            # img2img
+            pipe = diffusers.StableDiffusionImg2ImgPipeline.from_single_file(model, torch_dtype=fp_prec)
+            img_data = base64.b64decode(img)
+            input_img = Image.open(io.BytesIO(img_data))
+        else:
+            # txt2img
+            pipe = diffusers.StableDiffusionPipeline.from_single_file(model, torch_dtype=fp_prec)
 
         pipe.unet.set_attn_processor(diffusers.models.attention_processor.AttnProcessor2_0())
         pipe.scheduler = SAMPLERS[sampler].from_config(pipe.scheduler.config)
@@ -117,14 +132,16 @@ def generate():
                 'h': height,
                 'num_steps': num_steps,
                 'guidance': guidance,
-                'stream': stream
+                'stream': stream,
+                'img': img,
+                'strength': strength
             }
             print(f'Generating image: {json.dumps(data)}')
 
             cb_queue = queue.Queue()
             res_queue = queue.Queue()
 
-            proc = threading.Thread(target=run_pipe, args=(prompt, width, height, num_steps, guidance, neg_prompt, gen, stream, pipe, cb_queue, res_queue))
+            proc = threading.Thread(target=run_pipe, args=(prompt, width, height, num_steps, guidance, strength, neg_prompt, input_img, gen, stream, pipe, cb_queue, res_queue))
             proc.start()
 
             # send samples

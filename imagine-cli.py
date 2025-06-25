@@ -25,9 +25,9 @@ if __name__ == '__main__':
     parser.add_argument('-h', '--height', default=512, type=int, help='Output image height')
     parser.add_argument('-n', '--num_steps', default=25, type=int, help='Number of steps')
     parser.add_argument('-g', '--guidance', default=7.0, type=float, help='Guidance scale')
-    # parser.add_argument('-d', '--denoise_strength', default=0.8, type=float, help='Denoising strength (only if `--img` provided)')
+    parser.add_argument('-d', '--strength', default=0.8, type=float, help='Denoising strength (only if `--img` provided)')
     parser.add_argument('-s', '--sampler', default='DPM++ 2M', type=str, help=f'SD Sampler {SAMPLERS}')
-    # parser.add_argument('-i', '--img', default=None, type=str, help='Input image')
+    parser.add_argument('-i', '--img', default=None, type=str, help='Input image')
     parser.add_argument('--seed', default=random.randint(0, 2**64 - 1), type=int, help='Seed')
     parser.add_argument('--neg', default='', type=str, help='Negative prompt')
     parser.add_argument('--stream', default=None, type=int, help='Stream steps samples to output image')
@@ -37,6 +37,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     try:
+        # img2img
+        img_base64 = None
+        if args.img:
+            img = Image.open(args.img).convert("RGB").resize((args.width, args.height))
+            buffer = io.BytesIO()
+            img.save(buffer, format='PNG')
+            img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
         payload = {
             'model': args.model,
             'prompt': args.prompt,
@@ -47,7 +55,9 @@ if __name__ == '__main__':
             'sampler': args.sampler,
             'seed': args.seed,
             'neg': args.neg,
-            'stream': args.stream
+            'stream': args.stream,
+            'img': img_base64,
+            'strength': args.strength
         }
 
         response = requests.post(IMAGINE_URL, json=payload, stream=args.stream)
