@@ -15,6 +15,39 @@ IMAGINE_URL = 'http://{address}/generate'
 DEFAULT_MODEL = '/home/arch/AI/models/sd/dreamshaper_8.safetensors'
 SAMPLERS = ['ddim', 'euler', 'euler a', 'heun', 'lms', 'dpm++ 2m', 'dpm++ 2s', 'dpm++ sde', 'dpm2', 'dpm2 a']
 
+def send_generate_request(payload, address, stream, filename, meta, prefix="Image saved", resize=None):
+    response = requests.post(IMAGINE_URL.format(address=address), json=payload, stream=stream)
+    response.raise_for_status()
+
+    steps = 0
+    for msg in response.iter_lines():
+        result = json.loads(msg)
+
+        if 'img' in result:
+            seed = result.get('seed')
+            img_data = base64.b64decode(result['img'])
+            image = Image.open(io.BytesIO(img_data))
+
+            # For hires.fix, we need to resize the final image back to original dimensions
+            if resize is not None:
+                image = image.resize(resize)
+
+            meta['meta']['seed'] = seed
+            meta['out'] = result['img']
+
+            image.save(filename)
+            with open(meta_filename, 'w') as f:
+                f.write(json.dumps(meta, indent=2, ensure_ascii=False))
+
+            print(f'{prefix} [{steps}/{payload["num_steps"]}]: {filename}')
+            steps += 1
+        elif 'error' in result:
+            print(f'Server error: {result["error"]}')
+            if 'details' in result:
+                print(f'Details: {result["details"]}')
+    return result
+
+
 # main
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='SD image generator', add_help=False)
@@ -67,36 +100,10 @@ if __name__ == '__main__':
             'out': ''
         }
 
-        response = requests.post(IMAGINE_URL.format(address=args.address), json=payload, stream=args.stream)
-        response.raise_for_status()
-
         filename = args.output if args.output else f'{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
         meta_filename = f'{filename}.json'
 
-        # process
-        steps = 0
-        for msg in response.iter_lines():
-            result = json.loads(msg)
-            # print(result)
-
-            if 'img' in result:
-                seed = result.get('seed')
-                img_data = base64.b64decode(result['img'])
-                image = Image.open(io.BytesIO(img_data))
-
-                meta['meta']['seed'] = seed
-                meta['out'] = result['img']
-
-                image.save(filename)
-                with open(meta_filename, 'w') as f:
-                    f.write(json.dumps(meta, indent=2, ensure_ascii=False))
-
-                print(f'Image saved [{steps}/{args.num_steps}]: {filename}')
-                steps += 1
-            elif 'error' in result:
-                print(f'Server error: {result['error']}')
-                if 'details' in result:
-                    print(f'Details: {result['details']}')
+        result = send_generate_request(payload, args.address, args.stream, filename, meta, prefix="Image saved")
         
         # high resolution fix
         if args.hires and not args.img:
@@ -110,7 +117,7 @@ if __name__ == '__main__':
             img.save(buffer, format='PNG')
             img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
 
-            payload = {
+            hires_payload = {
                 'model': args.model,
                 'prompt': args.prompt,
                 'width': w,
@@ -125,32 +132,7 @@ if __name__ == '__main__':
                 'strength': 0.35
             }
 
-            response = requests.post(IMAGINE_URL.format(address=args.address), json=payload, stream=args.stream)
-            response.raise_for_status()
-
-            steps = 0
-            for msg in response.iter_lines():
-                result = json.loads(msg)
-                # print(result)
-
-                if 'img' in result:
-                    seed = result.get('seed')
-                    img_data = base64.b64decode(result['img'])
-                    image = Image.open(io.BytesIO(img_data)).resize((args.width, args.height))
-
-                    meta['meta']['seed'] = seed
-                    meta['out'] = result['img']
-
-                    image.save(filename)
-                    with open(meta_filename, 'w') as f:
-                        f.write(json.dumps(meta, indent=2, ensure_ascii=False))
-
-                    print(f'Image hires.fix saved [{steps}/{args.num_steps}]: {filename}')
-                    steps += 1
-                elif 'error' in result:
-                    print(f'Server error: {result['error']}')
-                    if 'details' in result:
-                        print(f'Details: {result['details']}')
+            send_generate_request(hires_payload, args.address, args.stream, filename, meta, prefix="Image hires.fix saved", resize=(args.width, args.height))
 
     except requests.exceptions.ConnectionError as e:
         print(f'Could not connect to the server. Is it running? Error: {e}')
