@@ -12,9 +12,9 @@
 *   **Versatile Generation:** Supports both **Text-to-Image (txt2img)** and **Image-to-Image (img2img)** capabilities.
 *   **Live Progress Streaming:** Get real-time updates of the generation process by streaming intermediate steps directly to your client.
 *   **Base64 Output:** Seamlessly receive generated images (both final and intermediate steps) as base64 strings, making them easy to embed directly into web pages, mobile apps, or other services without managing file storage.
-*   **Comprehensive Parameters:** Control image generation parameters like `width`, `height`, `num_steps`, `guidance_scale`, `sampler`, `seed`, `negative_prompt`, **input image (`img`), diffusion strength (`strength`)**, and **floating-point precision (`fp_prec`)** via the JSON payload and server arguments.
+*   **Comprehensive Parameters:** Control image generation parameters like `model` (optional, path to specific model file), `width`, `height`, `num_steps`, `guidance_scale`, `sampler`, `seed`, `negative_prompt`, **input image (`img`), diffusion strength (`strength`)** via the JSON payload. Server startup arguments (`--device`, `--full_prec`) control **floating-point precision** and compute device.
 *   **Offline Mode Support:** Run image generation completely offline once models are downloaded, ideal for local and secure deployments.
-*   **Built with Flask & Diffusers:** Leveraging robust and popular Python libraries for reliability and ease of use.
+*   **Built with Diffusers:** Leveraging robust and popular Python libraries for reliability and ease of use.
 *   **Hardware Agnostic:** Supports CPU, CUDA (NVIDIA), MPS (Apple Silicon), and potentially ROCm (AMD) depending on your PyTorch setup.
 
 ### Why Imagine?
@@ -33,7 +33,7 @@ This enables integration from **anywhere**: command-line scripts, Python applica
 
 2.  **Install dependencies:**
     ```bash
-    pip install torch diffusers transformers accelerate flask Pillow argparse requests base64
+    pip install torch diffusers transformers accelerate Pillow argparse requests base64
     ```
     (For CUDA (NVIDIA GPU) usage, ensure `torch` is correctly installed, e.g.: `pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118`)
 
@@ -41,14 +41,14 @@ This enables integration from **anywhere**: command-line scripts, Python applica
     Edit `imagine.py` and set `DEFAULT_MODEL` to the path of your `.safetensors` or `.ckpt` model file (e.g., `dreamshaper_8.safetensors`).
 
 4.  **Configure Server Options (Device, Precision):**
-    Instead of modifying `imagine.py`, you can configure the compute device and floating-point precision directly via command-line arguments when running the server.
-    *   `--device` or `-d`: Specify `'cpu'`, `'cuda'` (for NVIDIA GPUs), or `'mps'` (for Apple Silicon) for your model's computation. Defaults to `'cpu'`.
-    *   `--fp_prec` or `-f`: Set the floating-point precision to `16` (for `torch.float16`) or `32` (for `torch.float32`). `float16` can offer faster inference and lower VRAM usage on compatible hardware (like NVIDIA GPUs), but might affect quality. Defaults to `32`.
+    You can configure the compute device and floating-point precision directly via command-line arguments when running the server.
+    *   `--device` or `-d`: Specify `'cpu'`, `'cuda'` (for NVIDIA GPUs), or `'mps'` (for Apple Silicon) for your model's computation. Defaults to `'cuda'`.
+    *   `--full_prec` or `-f`: Use this flag to enable `torch.float32` (full precision). By default, `torch.float16` (half precision) is used, which can offer faster inference and lower VRAM usage on compatible hardware (like NVIDIA GPUs) but might affect quality.
 
 5.  **Run the server:**
     ```bash
-    python imagine.py --host '0.0.0.0' -p 5000 -d cuda -f 16 # Example for CUDA with float16
-    # python imagine.py # Runs with defaults (cpu, float32)
+    python imagine.py --host '0.0.0.0' -p 5000 -d cuda --full_prec # Example for CUDA with float32
+    # python imagine.py # Runs with defaults (cuda, float16)
     ```
     The server will start on `http://0.0.0.0:5000/`.
 
@@ -127,6 +127,8 @@ This enables integration from **anywhere**: command-line scripts, Python applica
 
 ### Imagine CLI
 
+**Note:** This `imagine-cli.py` script is a separate local image generation utility, distinct from the `imagine.py` server.
+
 ### Description
 
 A simple command-line script for generating images based on a text prompt using the `diffusers` library.
@@ -151,7 +153,7 @@ options:
   -g, --guidance GUIDANCE
                         Guidance scale
   -s, --sampler SAMPLER
-                        SD Sampler ['DDIM', 'Euler', 'Euler a', 'Heun', 'LMS', 'DPM++ 2M', 'DPM++ 2S', 'DPM++ SDE', 'DPM2', 'DPM2 a']
+                        SD Sampler ['ddim', 'euler', 'euler a', 'heun', 'lms', 'dpm++ 2m', 'dpm++ 2s', 'dpm++ sde', 'dpm2', 'dpm2 a']
   --seed SEED           Seed
   --neg NEG             Negative prompt
   --stream STREAM       Stream steps samples to output image
@@ -161,7 +163,7 @@ options:
 #### Example Usage
 
 ```bash
-./imagine-cli.py 'a photo of an astronaut riding a horse on mars, epic, cinematic, detailed' -w 768 -h 512 -n 25 -g 7.0 -s 'DPM++ 2M' --neg 'ugly, deformed, blurry, low quality'
+./imagine-cli.py 'a photo of an astronaut riding a horse on mars, epic, cinematic, detailed' -w 768 -h 512 -n 25 -g 7.0 -s 'dpm++ 2m' --neg 'ugly, deformed, blurry, low quality'
 ```
 
 ### Output
@@ -210,7 +212,8 @@ User=arch
 
 # The command to execute when the service starts.
 # Ensure /usr/bin/imagine-server points to your main server script (imagine.py).
-ExecStart=/usr/bin/imagine-server
+# It's recommended to include server arguments like device and precision here.
+ExecStart=/usr/bin/imagine-server -d cuda --full_prec
 
 # Restart the service if it crashes
 Restart=on-failure
@@ -230,7 +233,8 @@ WantedBy=multi-user.target
 
 **Important Notes:**
 *   **Replace `arch` with your actual Linux username!**
-*   Ensure `/usr/bin/imagine` symlink correctly points to your **server script** (`imagine.py`).
+*   Ensure `/usr/bin/imagine-server` symlink correctly points to your **server script** (`imagine.py`).
+*   The `ExecStart` line in `imagine.service` should specify desired server arguments (e.g., `-d cuda --full_prec`).
 
 **3. Enable and Start the Service:**
 

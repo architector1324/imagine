@@ -11,7 +11,7 @@ User=arch
 
 # The command to execute when the service starts.
 # /usr/bin/imagine is a symlink to /home/arch/AI/Projects/Imagine/imagine.py
-ExecStart=/usr/bin/imagine-server
+ExecStart=/usr/bin/imagine-server -d cpu -f
 
 # Restart the service if it crashes
 Restart=on-failure
