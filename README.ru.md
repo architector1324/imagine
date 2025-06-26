@@ -136,7 +136,7 @@
 ### Использование
 
 ```
-usage: imagine [-m MODEL] [-o OUTPUT] [-w WIDTH] [-h HEIGHT] [-n NUM_STEPS] [-g GUIDANCE] [-d STRENGTH] [--sampler SAMPLER] [-i IMG] [-f HIRES] [--seed SEED] [--neg NEG] [-s STREAM] [--host HOST] [-p PORT] [--help] prompt [prompt ...]
+usage: imagine [-m MODEL] [-o OUTPUT] [-w WIDTH] [-h HEIGHT] [-n NUM_STEPS] [-g GUIDANCE] [-d STRENGTH] [--sampler SAMPLER] [-i IMG] [-f HIRES] [--seed SEED] [--neg NEG] [-s STREAM] [-a ADDRESS] [--help] prompt [prompt ...]
 
 SD image generator
 
@@ -160,8 +160,8 @@ options:
   --seed SEED           Seed
   --neg NEG             Negative prompt
   -s, --stream STREAM   Stream steps samples to output image
-  --host HOST           Server host address
-  -p, --port PORT       Server port
+  -a, --address ADDRESS
+                        Server host address
   --help
 ```
 
