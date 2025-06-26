@@ -136,7 +136,7 @@
 ### Использование
 
 ```
-usage: imagine [-m MODEL] [-o OUTPUT] [-w WIDTH] [-h HEIGHT] [-n NUM_STEPS] [-g GUIDANCE] [-d STRENGTH] [-s SAMPLER] [-i IMG] [-f HIRES] [--seed SEED] [--neg NEG] [--stream STREAM] [--help] prompt [prompt ...]
+usage: imagine [-m MODEL] [-o OUTPUT] [-w WIDTH] [-h HEIGHT] [-n NUM_STEPS] [-g GUIDANCE] [-d STRENGTH] [--sampler SAMPLER] [-i IMG] [-f HIRES] [--seed SEED] [--neg NEG] [-s STREAM] [--host HOST] [-p PORT] [--help] prompt [prompt ...]
 
 SD image generator
 
@@ -154,13 +154,14 @@ options:
                         Guidance scale
   -d, --strength STRENGTH
                         Denoising strength (only if `--img` provided)
-  -s, --sampler SAMPLER
-                        SD Sampler ['ddim', 'euler', 'euler a', 'heun', 'lms', 'dpm++ 2m', 'dpm++ 2s', 'dpm++ sde', 'dpm2', 'dpm2 a']
+  --sampler SAMPLER     SD Sampler ['ddim', 'euler', 'euler a', 'heun', 'lms', 'dpm++ 2m', 'dpm++ 2s', 'dpm++ sde', 'dpm2', 'dpm2 a']
   -i, --img IMG         Input image
   -f, --hires HIRES     High Resolution fix
   --seed SEED           Seed
   --neg NEG             Negative prompt
-  --stream STREAM       Stream steps samples to output image
+  -s, --stream STREAM   Stream steps samples to output image
+  --host HOST           Server host address
+  -p, --port PORT       Server port
   --help
 ```
 

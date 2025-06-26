@@ -11,8 +11,8 @@ import requests
 from PIL import Image
 
 
-IMAGINE_URL = 'http://localhost:5000/generate'
-DEFAULT_MODEL = '/home/arch/AI/models/dreamshaper_8.safetensors'
+IMAGINE_URL = 'http://{host}:{port}/generate'
+DEFAULT_MODEL = '/home/arch/AI/models/sd/dreamshaper_8.safetensors'
 SAMPLERS = ['ddim', 'euler', 'euler a', 'heun', 'lms', 'dpm++ 2m', 'dpm++ 2s', 'dpm++ sde', 'dpm2', 'dpm2 a']
 
 # main
@@ -26,13 +26,15 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--num_steps', default=25, type=int, help='Number of steps')
     parser.add_argument('-g', '--guidance', default=7.0, type=float, help='Guidance scale')
     parser.add_argument('-d', '--strength', default=0.8, type=float, help='Denoising strength (only if `--img` provided)')
-    parser.add_argument('-s', '--sampler', default='dpm++ 2m', type=str, help=f'SD Sampler {SAMPLERS}')
+    parser.add_argument('--sampler', default='dpm++ 2m', type=str, help=f'SD Sampler {SAMPLERS}')
     parser.add_argument('-i', '--img', default=None, type=str, help='Input image')
     parser.add_argument('-f', '--hires', default=1.5, type=float, help='High Resolution fix')
     parser.add_argument('--seed', default=random.randint(0, 2**64 - 1), type=int, help='Seed')
     parser.add_argument('--neg', default='', type=str, help='Negative prompt')
-    parser.add_argument('--stream', default=None, type=int, help='Stream steps samples to output image')
+    parser.add_argument('-s', '--stream', default=None, type=int, help='Stream steps samples to output image')
     parser.add_argument('prompt', nargs='+', type=str, help='Prompt for model')
+    parser.add_argument('--host', default='0.0.0.0', type=str, help='Server host address')
+    parser.add_argument('-p', '--port', default=5000, type=int, help='Server port')
     parser.add_argument('--help', action='help')
 
     args = parser.parse_args()
@@ -66,7 +68,7 @@ if __name__ == '__main__':
             'out': ''
         }
 
-        response = requests.post(IMAGINE_URL, json=payload, stream=args.stream)
+        response = requests.post(IMAGINE_URL.format(host=args.host, port=args.port), json=payload, stream=args.stream)
         response.raise_for_status()
 
         filename = args.output if args.output else f'{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
@@ -124,7 +126,7 @@ if __name__ == '__main__':
                 'strength': 0.35
             }
 
-            response = requests.post(IMAGINE_URL, json=payload, stream=args.stream)
+            response = requests.post(IMAGINE_URL.format(host=args.host, port=args.port), json=payload, stream=args.stream)
             response.raise_for_status()
 
             steps = 0

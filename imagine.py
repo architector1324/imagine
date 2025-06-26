@@ -17,7 +17,7 @@ import socketserver
 from PIL import Image
 
 # settings
-DEFAULT_MODEL = '/home/arch/AI/models/dreamshaper_8.safetensors'
+DEFAULT_MODEL = '/home/arch/AI/models/sd/dreamshaper_8.safetensors'
 DEFAULT_FP_PREC = torch.float16
 DEFAULT_DEVICE = 'cuda'
 
