@@ -83,7 +83,7 @@ This enables integration from **anywhere**: command-line scripts, Python applica
              "num_steps": 25,
              "guidance": 7.0,
              "sampler": "dpm++ 2m",
-             "seed": 12345,
+             "seed": 591445185899376350,
              "neg": "ugly, deformed, blurry, low quality"
          }' \
          http://localhost:5000/generate | jq .

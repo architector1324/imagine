@@ -63,7 +63,7 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--img', default=None, type=str, help='Input image')
     parser.add_argument('-f', '--hires', default=None, type=float, help='High Resolution fix')
     parser.add_argument('--seed', default=random.randint(0, 2**64 - 1), type=int, help='Seed')
-    parser.add_argument('--neg', default='', type=str, help='Negative prompt')
+    parser.add_argument('--neg', default='ugly, deformed, blurry, low quality', type=str, help='Negative prompt')
     parser.add_argument('-s', '--stream', default=None, type=int, help='Stream steps samples to output image')
     parser.add_argument('prompt', nargs='+', type=str, help='Prompt for model')
     parser.add_argument('-a', '--address', default='0.0.0.0:5000', type=str, help='Server host address')
