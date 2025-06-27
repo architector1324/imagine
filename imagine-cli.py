@@ -70,25 +70,26 @@ if __name__ == '__main__':
     parser.add_argument('--help', action='help')
 
     args = parser.parse_args()
+    prompt = ' '.join(args.prompt)
 
     try:
         # img2img
         img_base64 = None
         if args.img:
-            img = Image.open(args.img).convert("RGB").resize((args.width, args.height))
+            img = Image.open(args.img).convert("RGB")
             buffer = io.BytesIO()
             img.save(buffer, format='PNG')
             img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
 
         payload = {
             'model': args.model,
-            'prompt': args.prompt,
+            'prompt': prompt,
             'width': args.width,
             'height': args.height,
             'num_steps': args.num_steps,
             'guidance': args.guidance,
             'sampler': args.sampler,
-            'seed': args.seed,
+            'seed': str(args.seed),
             'neg': args.neg,
             'stream': args.stream,
             'img': img_base64,
@@ -104,7 +105,7 @@ if __name__ == '__main__':
         meta_filename = f'{filename}.json'
 
         result = send_generate_request(payload, args.address, args.stream, filename, meta, prefix="Image saved")
-        
+
         # high resolution fix
         if args.hires and not args.img:
             w = int(args.width * args.hires)
@@ -119,13 +120,13 @@ if __name__ == '__main__':
 
             hires_payload = {
                 'model': args.model,
-                'prompt': args.prompt,
+                'prompt': prompt,
                 'width': w,
                 'height': h,
                 'num_steps': args.num_steps,
                 'guidance': args.guidance,
                 'sampler': args.sampler,
-                'seed': args.seed,
+                'seed': str(args.seed),
                 'neg': args.neg,
                 'stream': args.stream,
                 'img': img_base64,

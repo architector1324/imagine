@@ -48,11 +48,7 @@ def run_pipe(prompt, width, height, num_steps, guidance, strength, neg_prompt, i
             raise Exception('Generation was cancelled by client.')
 
         with torch.no_grad():
-            latents = 1 / 0.18215 * latents # VAE scaling factor for Stable Diffusion
-            sample = pipe.vae.decode(latents).sample
-            sample = (sample / 2 + 0.5).clamp(0, 1)
-
-            sample = sample.cpu().permute(0, 2, 3, 1).float().numpy()
+            sample = pipe.decode_latents(latents)
             image = pipe.numpy_to_pil(sample)
 
             buffer = io.BytesIO()
@@ -69,7 +65,7 @@ def run_pipe(prompt, width, height, num_steps, guidance, strength, neg_prompt, i
             num_inference_steps=num_steps,
             guidance_scale=guidance,
             strength=strength,
-            negative_prompt=[neg_prompt],
+            negative_prompt=neg_prompt,
             image=img,
             generator=gen,
             callback = sample_cb if stream else None,
@@ -90,6 +86,15 @@ def run_pipe(prompt, width, height, num_steps, guidance, strength, neg_prompt, i
         # Signal that callback stream is finished, or that the process is ending
         cb_queue.put(None)
 
+        # Cleanup model from memory
+        pipe.maybe_free_model_hooks()
+
+        print(f'Pipe cleared for seed {gen.initial_seed()}.')
+
+        if dev == 'cuda':
+            torch.cuda.empty_cache()
+            print(f"CUDA cache cleared for seed {gen.initial_seed()}.")
+
 
 def generate_image_logic(data):
     # get prompt
@@ -104,11 +109,13 @@ def generate_image_logic(data):
     num_steps = data.get('num_steps', 25)
     guidance = data.get('guidance', 7.0)
     sampler = data.get('sampler', 'dpm++ 2m')
-    seed = data.get('seed', random.randint(0, 2**64 - 1))
+    seed_str = data.get('seed', str(random.randint(0, 2**64 - 1)))
     neg_prompt = data.get('neg', '')
     stream = data.get('stream', None)
     img_b64 = data.get('img', None)
     strength = data.get('strength', 0.8)
+
+    seed = int(seed_str)
 
     # check sampler
     if sampler not in SAMPLERS:
@@ -123,7 +130,7 @@ def generate_image_logic(data):
         # img2img
         pipe = diffusers.StableDiffusionImg2ImgPipeline.from_single_file(model_path, torch_dtype=fp_prec)
         img_data = base64.b64decode(img_b64)
-        input_img = Image.open(io.BytesIO(img_data)).convert("RGB")
+        input_img = Image.open(io.BytesIO(img_data)).convert("RGB").resize((width, height))
     else:
         # txt2img
         pipe = diffusers.StableDiffusionPipeline.from_single_file(model_path, torch_dtype=fp_prec)
@@ -150,16 +157,17 @@ def generate_image_logic(data):
 
     try:
         request_log_data = {
+            'model': model_path,
             'prompt': prompt,
-            'neg_prompt': neg_prompt,
+            'neg': neg_prompt,
             'seed': seed,
             'sampler': sampler,
-            'w': width,
-            'h': height,
+            'width': width,
+            'height': height,
             'num_steps': num_steps,
             'guidance': guidance,
             'stream': stream,
-            'img': img_b64,
+            'img': f'{img_b64[:32]}...' if img_b64 else None,
             'strength': strength
         }
         print(f'Generating image: {json.dumps(request_log_data)}')
@@ -174,7 +182,7 @@ def generate_image_logic(data):
                     if img is None: # Signal from run_pipe that no more callbacks will come
                         break
                     # Yield JSON string with newline for stream processing
-                    yield json.dumps({"img": img, "seed": seed, "status": "intermediate"}) + '\n'
+                    yield json.dumps({"img": img, "seed": str(seed), "status": "intermediate"}) + '\n'
                 except queue.Empty:
                     # If queue is empty, check if the worker thread is still alive and not just waiting for data.
                     # This helps prevent infinite loops if the worker died without signaling None.
@@ -201,7 +209,7 @@ def generate_image_logic(data):
 
             print("Image generated and encoded successfully.")
             # Yield the final result
-            yield json.dumps({"img": img_base64, "seed": seed, "status": "final"}) + '\n'
+            yield json.dumps({"img": img_base64, "seed": str(seed), "status": "final"}) + '\n'
 
     except GeneratorExit:
         # This exception is raised by the caller (.close() on generator) when the client disconnects.
@@ -223,14 +231,16 @@ def generate_image_logic(data):
             if proc.is_alive():
                 print(f"Warning: Generation thread (seed {seed}) did not stop gracefully. It might still be running or stuck.")
 
-        # Cleanup model from memory
-        del pipe
-        if dev == 'cuda':
-            torch.cuda.empty_cache()
-            print(f"CUDA cache cleared for seed {seed}.")
-
-
 class SDRequestHandler(BaseHTTPRequestHandler):
+     # Handle OPTIONS preflight requests
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS') # Allow POST and OPTIONS methods
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type') # Allow Content-Type header
+        self.send_header('Access-Control-Max-Age', '86400') # Cache preflight response for 24 hours
+        self.end_headers()
+
     def do_POST(self):
         if self.path == '/generate':
             content_length = int(self.headers.get('Content-Length', 0))
@@ -254,6 +264,8 @@ class SDRequestHandler(BaseHTTPRequestHandler):
                 if is_streaming_requested:
                     self.send_response(200)
                     self.send_header('Content-Type', 'text/json')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.send_header('Access-Control-Allow-Headers', 'Content-Type')
                     self.send_header('Transfer-Encoding', 'chunked')
                     self.end_headers()
 
@@ -273,6 +285,8 @@ class SDRequestHandler(BaseHTTPRequestHandler):
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json')
                     self.send_header('Content-Length', str(len(encoded_response)))
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.send_header('Access-Control-Allow-Headers', 'Content-Type')
                     self.end_headers()
                     self.wfile.write(encoded_response)
 
@@ -313,10 +327,12 @@ class ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
 # main
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='SD image generator server', add_help=False)
-    parser.add_argument('--host', default='0.0.0.0', type=str, help='Server host address')
+    parser.add_argument('-h', '--host', default='0.0.0.0', type=str, help='Server host address')
     parser.add_argument('-p', '--port', default=5000, type=int, help='Server port')
     parser.add_argument('-d', '--device', default=DEFAULT_DEVICE, type=str,  choices=['cpu', 'cuda', 'mps'], help='Model compute device')
     parser.add_argument('-f', '--full_prec', action='store_true', help='Use full (float32) floating point precision instead of float16 (default).')
+    parser.add_argument('--help', action='help')
+
     args = parser.parse_args()
 
     dev = args.device
