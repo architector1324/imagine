@@ -9,18 +9,68 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Phosphor Icons CDN REMOVED - using HTML entities for arrows -->
     <style>
-        /* Overall body and container styling for a dark, modern look */
+        /* Define CSS variables for the new color palette (VS Code like) */
+        :root {
+            --body-bg: #1e1e1e;
+            --card-bg: #252526;
+
+            --primary-text: #d4d4d4;
+            --input-text: #dcdcdc;
+            --placeholder-text: #808080;
+            --status-fading-text: #6a9955; /* For "Генерация изображения..." */
+
+            --primary-border: #3c3c3c;
+            --input-border: #3c3c3c;
+            --input-border-focus: #007acc;
+
+            --input-bg: #1e1e1e;
+            --input-bg-focus: #323233;
+
+            --collapsible-header-bg: #2d2d2d;
+            --collapsible-header-hover-bg: #3c3c3c;
+            --collapsible-content-bg: #1e1e1e; /* Using body-bg for content consistency */
+
+            /* Messages/Notifications */
+            --info-msg-bg: #31708f;
+            --info-msg-border: #2892d7;
+            --info-msg-text: #d4d4d4;
+
+            --success-msg-bg: #1e3a22;
+            --success-msg-border: #2ea043;
+            --success-msg-text: #89d185;
+
+            --error-msg-bg: #512525;
+            --error-msg-border: #f48771;
+            --error-msg-text: #f48771;
+            
+            /* Misc */
+            --scrollbar-thumb: #4d4d4d;
+            --scrollbar-thumb-hover: #646464;
+            --image-frame-bg: #1e1e1e; /* Same as body-bg for empty frame */
+
+            /* Gradient Button Colors (KEPT AS IS, referencing existing hex values) */
+            --primary-btn-start: #6c47ff;
+            --primary-btn-end: #58a6ff;
+            --stop-btn-start: #ef4444;
+            --stop-btn-end: #dc2626;
+            --green-btn-start: #10b981;
+            --green-btn-end: #059669;
+            --disabled-btn-start: #30363d;
+            --disabled-btn-end: #444c56;
+        }
+
+        /* Overall body and container styling for a dark, modern look (VS Code like) */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0d1117; /* Very dark background for a "flux" feel */
-            color: #c9d1d9; /* Light gray text for contrast */
+            background-color: var(--body-bg);
+            color: var(--primary-text);
             margin: 0;
             padding: 0;
             display: flex;
             justify-content: center;
             align-items: flex-start;
             min-height: 100vh;
-            padding: 2rem; /* Consistent padding around the main layout */
+            padding: 2rem;
             box-sizing: border-box;
         }
 
@@ -29,42 +79,42 @@
             display: grid;
             grid-template-columns: 1fr; /* Default to single column on mobile */
             gap: 2rem;
-            max-width: 1400px; /* Wider container */
+            max-width: 1400px;
             width: 100%;
         }
 
         @media (min-width: 1024px) { /* On large screens, two columns */
             .main-layout {
-                grid-template-columns: 1.2fr 2fr; /* Sidebar smaller than content area */
+                grid-template-columns: 1.2fr 2fr;
             }
         }
 
-        /* Sidebar specific styling */
+        /* Sidebar specific styling (VS Code like card) */
         .sidebar {
-            background: linear-gradient(145deg, #161b22, #0d1117); /* Subtle gradient for depth */
-            border: 1px solid #30363d; /* Soft border */
-            border-radius: 1.25rem; /* More rounded corners */
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); /* Deeper shadow */
+            background-color: var(--card-bg);
+            border: 1px solid var(--primary-border);
+            border-radius: 1.25rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
             padding: 2.5rem;
-            max-height: calc(100vh - 4rem); /* Limit height to viewport minus padding */
-            overflow-y: auto; /* Enable scrolling for sidebar content */
-            position: sticky; /* Make sidebar sticky */
-            top: 2rem; /* Stick to top with padding */
+            max-height: calc(100vh - 4rem);
+            overflow-y: auto;
+            position: sticky;
+            top: 2rem;
         }
 
-        /* Main content area styling */
+        /* Main content area styling (VS Code like card) */
         .content-area {
-            background: linear-gradient(145deg, #161b22, #0d1117); /* Same subtle gradient */
-            border: 1px solid #30363d;
+            background-color: var(--card-bg);
+            border: 1px solid var(--primary-border);
             border-radius: 1.25rem;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
             padding: 2.5rem;
             display: flex;
             flex-direction: column;
-            align-items: center; /* Center content vertically */
-            justify-content: center; /* Center content horizontally */
-            flex-grow: 1; /* Allow content area to grow */
-            min-width: 0; /* Important for flex items to not overflow */
+            align-items: center;
+            justify-content: center;
+            flex-grow: 1;
+            min-width: 0;
         }
 
         /* Custom scrollbar for textareas, matching the dark theme */
@@ -74,54 +124,54 @@
         }
         textarea::-webkit-scrollbar-track,
         .sidebar::-webkit-scrollbar-track {
-            background: #161b22;
+            background: var(--card-bg);
             border-radius: 4px;
         }
         textarea::-webkit-scrollbar-thumb,
         .sidebar::-webkit-scrollbar-thumb {
-            background: #4a5568;
+            background: var(--scrollbar-thumb);
             border-radius: 4px;
         }
         textarea::-webkit-scrollbar-thumb:hover,
         .sidebar::-webkit-scrollbar-thumb:hover {
-            background: #6a7689;
+            background: var(--scrollbar-thumb-hover);
         }
 
-        /* Styling for inputs and selects - Harmonized for Flux theme */
+        /* Styling for inputs and selects - Harmonized for VS Code theme */
         .form-input-dark {
-            background-color: #1e2a3a; /* Darker blue-gray for inputs */
-            border: 1px solid #3d4a5c; /* Complementary border */
-            color: #e2e8f0; /* Slightly brighter text in inputs */
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--input-text);
             padding: 0.75rem 1rem;
             border-radius: 0.75rem;
             transition: all 0.2s ease-in-out;
         }
         .form-input-dark:focus {
-            border-color: #58a6ff;
-            box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.5);
-            background-color: #2a3b4d; /* Slightly lighter on focus */
+            border-color: var(--input-border-focus);
+            box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.5); /* Using input-border-focus with transparency */
+            background-color: var(--input-bg-focus);
         }
         .form-input-dark::placeholder {
-            color: #8c98a7; /* Lighter placeholder text */
+            color: var(--placeholder-text);
         }
 
-        /* Styling for buttons */
+        /* Styling for buttons (retained gradients as requested) */
         .btn-primary {
-            background: linear-gradient(90deg, #6c47ff, #58a6ff); /* Gradient button */
+            background: linear-gradient(90deg, var(--primary-btn-start), var(--primary-btn-end));
             color: white;
             padding: 1rem 2.5rem;
             font-weight: 600;
-            border-radius: 9999px; /* Fully rounded pill shape */
-            box-shadow: 0 5px 15px rgba(108, 71, 255, 0.3); /* Soft shadow */
+            border-radius: 9999px;
+            box-shadow: 0 5px 15px rgba(108, 71, 255, 0.3);
             transition: all 0.3s ease-in-out;
-            border: none; /* Remove default border */
+            border: none;
         }
         .btn-primary:hover {
-            transform: translateY(-2px) scale(1.02); /* Slight lift and scale on hover */
+            transform: translateY(-2px) scale(1.02);
             box-shadow: 0 8px 20px rgba(108, 71, 255, 0.4);
         }
         .btn-primary:disabled {
-            background: linear-gradient(90deg, #30363d, #444c56); /* Grayed out when disabled */
+            background: linear-gradient(90deg, var(--disabled-btn-start), var(--disabled-btn-end));
             cursor: not-allowed;
             box-shadow: none;
             transform: none;
@@ -129,7 +179,7 @@
 
         /* Stop button specific styling */
         .btn-stop {
-            background: linear-gradient(90deg, #ef4444, #dc2626); /* Red gradient for stop */
+            background: linear-gradient(90deg, var(--stop-btn-start), var(--stop-btn-end));
             color: white;
             padding: 1rem 2.5rem;
             font-weight: 600;
@@ -145,11 +195,11 @@
 
         /* Green button style for "Выбрать модель" и "Подтвердить" in modal */
         .btn-green {
-            background: linear-gradient(90deg, #10b981, #059669); /* Green gradient */
+            background: linear-gradient(90deg, var(--green-btn-start), var(--green-btn-end));
             color: white;
-            padding: 1rem 2.5rem; /* Increased padding for better click area */
-            font-weight: 600; /* Consistent font-weight */
-            border-radius: 9999px; /* Fully rounded */
+            padding: 1rem 2.5rem;
+            font-weight: 600;
+            border-radius: 9999px;
             box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
             transition: all 0.3s ease-in-out;
             border: none;
@@ -159,7 +209,7 @@
             box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
         }
         .btn-green:disabled {
-            background: linear-gradient(90deg, #30363d, #444c56);
+            background: linear-gradient(90deg, var(--disabled-btn-start), var(--disabled-btn-end));
             cursor: not-allowed;
             box-shadow: none;
             transform: none;
@@ -167,9 +217,9 @@
 
         /* Collapsible Section Styling */
         .collapsible-header {
-            background-color: #1e2a3a; /* Darker background for header */
-            border: 1px solid #30363d;
-            border-radius: 0.75rem; /* Rounded corners for header */
+            background-color: var(--collapsible-header-bg);
+            border: 1px solid var(--primary-border);
+            border-radius: 0.75rem;
             padding: 1rem 1.5rem;
             margin-bottom: 0.5rem;
             cursor: pointer;
@@ -179,43 +229,43 @@
             transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
         }
         .collapsible-header:hover {
-            background-color: #2a3b4d;
-            border-color: #4a5568;
+            background-color: var(--collapsible-header-hover-bg);
+            border-color: var(--primary-border);
         }
         .collapsible-header.open {
             border-bottom-left-radius: 0;
             border-bottom-right-radius: 0;
         }
         .collapsible-content {
-            background-color: #161b22; /* Matches sidebar background */
-            border: 1px solid #30363d;
-            border-top: none; /* No top border, blends with header */
+            background-color: var(--collapsible-content-bg); /* Now explicitly using content-bg variable */
+            border: 1px solid var(--primary-border);
+            border-top: none;
             border-bottom-left-radius: 0.75rem;
             border-bottom-right-radius: 0.75rem;
             padding: 1.5rem;
-            transition: max-height 0.3s ease-out, opacity 0.3s ease-out; /* Smooth collapse/expand */
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
             overflow: hidden;
-            max-height: 1000px; /* Max height for open state */
+            max-height: 1000px;
             opacity: 1;
-            margin-bottom: 1.5rem; /* Space after each section */
+            margin-bottom: 1.5rem;
         }
         .collapsible-content.hidden {
             max-height: 0;
             opacity: 0;
             padding-top: 0;
             padding-bottom: 0;
-            border: none; /* Remove borders when hidden */
+            border: none;
         }
         .collapsible-content .grid {
-            margin-top: 0; /* Remove default margin */
+            margin-top: 0;
             padding-top: 0;
         }
 
         /* Icon rotation for collapse */
         .collapse-icon {
             transition: transform 0.3s ease-in-out;
-            display: inline-block; /* Ensure it respects transform */
-            line-height: 1; /* Align vertically */
+            display: inline-block;
+            line-height: 1;
         }
         .collapse-icon.rotate-90 {
             transform: rotate(90deg);
@@ -226,37 +276,37 @@
 
         /* Styling for the image itself */
         #generatedImage {
-            max-width: 100%; /* Ensure it fits its container */
-            max-height: 100%; /* Ensure it fits its container */
-            object-fit: contain; /* Ensure image fits without cropping */
-            display: block; /* Ensure it takes full width when present */
-            border-radius: 0.75rem; /* Match container border-radius */
-            flex-shrink: 0; /* Prevent shrinking when content area is smaller */
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+            border-radius: 0.75rem;
+            flex-shrink: 0;
         }
 
         /* Modal specific styling */
         .modal {
-            background-color: rgba(0, 0, 0, 0.75); /* Darker overlay */
+            background-color: rgba(0, 0, 0, 0.75);
             transition: opacity 0.3s ease-in-out;
-            pointer-events: auto; /* Ensure clicks are captured */
+            pointer-events: auto;
         }
         .modal-content {
-            background: linear-gradient(145deg, #161b22, #0d1117);
-            border: 1px solid #30363d;
+            background-color: var(--card-bg);
+            border: 1px solid var(--primary-border);
             border-radius: 1.25rem;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
         .modal .form-input-dark {
-            background-color: #0d1117; /* Even darker for modal input */
-            border-color: #30363d;
+            background-color: var(--input-bg);
+            border-color: var(--input-border);
         }
         /* Modal Buttons - Applying consistent gradient styles */
-        .modal .btn-modal-primary { /* Confirm button (now green) */
-            background: linear-gradient(90deg, #10b981, #059669); /* Same as btn-green */
+        .modal .btn-modal-primary {
+            background: linear-gradient(90deg, var(--green-btn-start), var(--green-btn-end));
             color: white;
             padding: 0.75rem 1.5rem;
             font-weight: 600;
-            border-radius: 9999px; /* Fully rounded */
+            border-radius: 9999px;
             box-shadow: 0 3px 10px rgba(16, 185, 129, 0.2);
             transition: all 0.2s ease-in-out;
             border: none;
@@ -266,21 +316,25 @@
             box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
         }
 
-        .modal .btn-modal-secondary { /* Cancel button */
-            background: linear-gradient(90deg, #4a5568, #3a4352); /* Darker gray gradient */
-            color: #e2e8f0;
+        /* === UPDATED STYLING FOR GRAY BUTTONS (VS CODE STYLE) === */
+        .modal .btn-modal-secondary { /* 'Отмена' and 'Сохранить настройки в JSON' */
+            background-color: var(--collapsible-header-bg); /* Solid color from VS Code palette */
+            border: 1px solid var(--primary-border); /* Consistent border */
+            color: var(--primary-text);
             padding: 0.75rem 1.5rem;
             font-weight: 600;
-            border-radius: 9999px; /* Fully rounded */
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-            transition: all 0.2s ease-in-out;
-            border: none;
+            border-radius: 0.75rem; /* More square-ish, VS Code like */
+            box-shadow: none; /* No shadow by default */
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            /* Removed default border as it's set by border property */
         }
         .modal .btn-modal-secondary:hover {
-            transform: translateY(-1px) scale(1.02);
-            background: linear-gradient(90deg, #5a6578, #4a5568);
-            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.3);
+            background-color: var(--collapsible-header-hover-bg); /* Darker hover */
+            transform: none; /* Remove translation/scale on hover */
+            box-shadow: none; /* No shadow on hover */
         }
+        /* === END UPDATED STYLING === */
+
 
         /* Floating Message Pop-up */
         #floatingMessageContainer {
@@ -311,23 +365,24 @@
             pointer-events: none;
         }
 
-        /* Colors for pop-up types, all info/status messages are gray */
+        /* Colors for pop-up types, info/status messages are now a darker neutral gray */
         #floatingMessageContainer.info {
-            background: linear-gradient(90deg, #30363d, #444c56);
-            border: 1px solid #4a5568;
-            color: #c9d1d9;
+            background-color: var(--info-msg-bg);
+            border: 1px solid var(--info-msg-border);
+            color: var(--info-msg-text);
         }
         #floatingMessageContainer.success {
-            background-color: #1c362d;
-            border: 1px solid #3b6d5f;
-            color: #6ee7b7;
+            background-color: var(--success-msg-bg);
+            border: 1px solid var(--success-msg-border);
+            color: var(--success-msg-text);
         }
         #floatingMessageContainer.error {
-            background-color: #3b2222;
-            border: 1px solid #6b3e3e;
-            color: #ef4444;
+            background-color: var(--error-msg-bg);
+            border: 1px solid var(--error-msg-border);
+            color: var(--error-msg-text);
         }
 
+        /* === UPDATED STYLING FOR GRAY BUTTONS (VS CODE STYLE) === */
         /* Style for the file input label to make it look like a button */
         .file-input-button {
             display: inline-block;
@@ -335,29 +390,32 @@
             text-align: center;
             width: 100%;
             font-size: 0.875rem;
-            background: linear-gradient(90deg, #4a5568, #3a4352); /* Darker gray gradient */
-            color: #e2e8f0;
+            background-color: var(--collapsible-header-bg); /* Solid color from VS Code palette */
+            border: 1px solid var(--primary-border); /* Consistent border */
+            color: var(--primary-text);
             padding: 1rem 2.5rem;
             font-weight: 600;
-            border-radius: 9999px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease-in-out;
-            border: none;
+            border-radius: 0.75rem; /* More square-ish, VS Code like */
+            box-shadow: none; /* No shadow by default */
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            /* Removed default border as it's set by border property */
         }
         .file-input-button:hover {
-            transform: translateY(-2px) scale(1.02);
-            background: linear-gradient(90deg, #5a6578, #4a5568);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            transform: none; /* Remove translation/scale on hover */
+            background-color: var(--collapsible-header-hover-bg); /* Darker hover */
+            box-shadow: none; /* No shadow on hover */
         }
         /* Disable state for file input button */
         .file-input-button[data-disabled="true"] {
-            background: linear-gradient(90deg, #30363d, #444c56);
+            background: linear-gradient(90deg, var(--disabled-btn-start), var(--disabled-btn-end));
             cursor: not-allowed;
             box-shadow: none;
             transform: none;
             opacity: 0.7;
             pointer-events: none; /* Crucial for disabling interaction */
         }
+        /* === END UPDATED STYLING === */
+
 
         /* Animation for fading text */
         @keyframes fade-cycle {
@@ -370,21 +428,21 @@
 
         /* Image frame styling */
         #imageFrame {
-            width: 100%; /* Take up 100% of available width within content-area */
-            height: auto; /* Height will be determined by aspect-ratio and width */
-            max-width: 100%; /* Max-width and max-height for responsiveness within its container */
+            width: 100%;
+            height: auto;
+            max-width: 100%;
             max-height: 100%; 
-            box-sizing: border-box; /* Padding is added to content-box model */
-            position: relative; /* For absolute positioning of text overlay */
-            background-color: #1e2a3a; /* Dark background for empty frame */
+            box-sizing: border-box;
+            position: relative;
+            background-color: var(--image-frame-bg);
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid #30363d;
+            border: 1px solid var(--primary-border);
             border-radius: 0.75rem;
-            min-height: 200px; /* Minimum height for frame even if dimensions are small */
-            overflow: hidden; /* Hide overflow from image */
-            aspect-ratio: var(--image-aspect-ratio, 1/1); /* Default 1:1 aspect ratio */
+            min-height: 200px;
+            overflow: hidden;
+            aspect-ratio: var(--image-aspect-ratio, 1/1);
         }
 
         #imageFrame #generatedImage {
@@ -398,15 +456,33 @@
 
         #placeholderTextOverlay {
             position: absolute;
-            inset: 0; /* Cover the entire parent */
+            inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #8c98a7; /* Gray text color */
-            font-size: 1.5rem; /* text-2xl */
-            font-weight: bold; /* font-bold */
-            transition: opacity 0.3s ease-in-out; /* Fade animation */
-            z-index: 20; /* Above image, below aboveImageStatusText */
+            color: var(--placeholder-text);
+            font-size: 1.5rem;
+            font-weight: bold;
+            transition: opacity 0.3s ease-in-out;
+            z-index: 20;
+        }
+
+        /* Override Tailwind classes for specific elements to match the palette */
+        .text-gray-300 {
+            color: var(--primary-text);
+        }
+        .text-gray-400 {
+            color: var(--primary-text); /* Labels, slightly lighter than primary text in palette */
+        }
+        /* Adjust for generic text-gray-500 if it's not explicitly overridden elsewhere */
+        .text-gray-500 {
+            color: var(--placeholder-text); /* Used for smaller informational text */
+        }
+        .text-white { /* Ensure main heading remains white for contrast */
+            color: white;
+        }
+        .text-red-500 { /* Keep required asterisk red */
+            color: #ef4444; 
         }
     </style>
 </head>
@@ -435,6 +511,9 @@
                                 <input type="file" id="loadJsonFileInput" accept=".json" class="hidden">
                                 <button type="button" id="saveSettingsButton" class="btn-modal-secondary w-full max-w-xs px-6 py-3 text-sm">
                                     Сохранить настройки в JSON
+                                </button>
+                                <button type="button" id="resetSettingsButton" class="btn-stop w-full max-w-xs px-6 py-3 text-sm">
+                                    Сбросить настройки
                                 </button>
                             </div>
                         </div>
@@ -468,7 +547,7 @@
                                     Выбрать модель
                                 </button>
                                 <p id="currentModelPathDisplay" class="text-xs text-gray-500 mt-2 text-center break-all">
-                                    Текущая модель: <span class="text-gray-300 font-mono">по умолчанию</span>
+                                    Текущая модель: <span class="font-mono" style="color: var(--input-text);">по умолчанию</span>
                                 </p>
                                 <input type="file" id="hiddenModelFileInput" accept=".safetensors,.ckpt" class="hidden">
                             </div>
@@ -646,21 +725,21 @@
                 </div>
 
                 <!-- Hidden class removed, visibility controlled by JS -->
-                <div id="aboveImageStatusText" class="text-xl font-bold text-gray-500 mb-4 fade-animation">
+                <div id="aboveImageStatusText" class="text-xl font-bold" style="color: var(--status-fading-text);">
                     Генерация изображения...
                 </div>
 
                 <!-- Main Image Frame/Container -->
-                <div id="imageFrame" class="relative flex flex-col items-center justify-content border border-gray-600 rounded-lg bg-gray-800 overflow-hidden">
+                <div id="imageFrame" class="relative flex flex-col items-center justify-content" style="border: 1px solid var(--primary-border); background-color: var(--image-frame-bg);">
                     <!-- This overlay is shown when no image is present (initial or generating with no image yet) -->
-                    <div id="placeholderTextOverlay" class="absolute inset-0 flex items-center justify-center text-xl text-gray-500 transition-opacity duration-300 ease-in-out">
+                    <div id="placeholderTextOverlay" class="absolute inset-0 flex items-center justify-center text-xl font-bold transition-opacity duration-300 ease-in-out" style="color: var(--placeholder-text);">
                         Нажмите 'Генерировать'
                     </div>
                     <!-- Removed src and hidden class, visibility controlled by JS -->
                     <img id="generatedImage" class="max-w-full max-h-full w-full h-full object-contain relative z-5" alt="Сгенерированное изображение" />
                 </div>
                 <!-- Moved outside imageFrame, hidden class removed, now managed by JS -->
-                <p id="finalSeed" class="text-gray-400 text-sm mt-4">Сид: <span class="font-mono text-gray-300"></span></p>
+                <p id="finalSeed" class="text-sm mt-4" style="color: var(--primary-text);">Сид: <span class="font-mono" style="color: var(--input-text);"></span></p>
                 
                 <!-- START: Промпты - Перемещенный блок под изображение, теперь сворачиваемый -->
                 <div class="collapsible-container w-full mt-8">
@@ -711,7 +790,7 @@
         </div>
     </form>
 
-    <!-- Hidden class removed, visibility controlled by JS -->
+    <!-- Modal for model path selection -->
     <div id="modelPathModal" class="fixed inset-0 modal flex items-center justify-center z-50 p-4">
         <div class="modal-content p-6 w-full max-w-md">
             <h3 class="text-xl font-semibold text-white mb-4">Укажите путь к файлу модели на сервере</h3>
@@ -737,6 +816,22 @@
         </div>
     </div>
 
+    <!-- Custom Confirmation Modal (for Reset Settings) -->
+    <div id="resetConfirmModal" class="fixed inset-0 modal flex items-center justify-center z-50 p-4" style="display: none;">
+        <div class="modal-content p-6 w-full max-w-md text-center">
+            <h3 class="text-xl font-semibold text-white mb-4">Подтвердите сброс настроек</h3>
+            <p class="text-gray-400 mb-6">Вы уверены, что хотите сбросить все настройки к значениям по умолчанию? Это действие необратимо.</p>
+            <div class="flex justify-center space-x-4">
+                <button type="button" id="cancelResetButton" class="btn-modal-secondary">
+                    Отмена
+                </button>
+                <button type="button" id="confirmResetButton" class="btn-stop">
+                    Сбросить
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // DOM Elements - Declared with `let` to be initialized after DOM is ready
         let serverAddressInput;
@@ -757,21 +852,27 @@
         let strengthInput;
         let streamInput; 
         let generateButton;
+        let resetSettingsButton; 
 
         // Elements for image display and status
-        let aboveImageStatusText; // Text above the image during generation
-        let imageFrame; // The main frame for the image and placeholder
-        let placeholderTextOverlay; // Text inside the frame (initial or generating with no image yet)
-        let generatedImage; // The actual generated image
-        let finalSeedDisplay; // The <p> element that displays the seed text and number
+        let aboveImageStatusText; 
+        let imageFrame; 
+        let placeholderTextOverlay; 
+        let generatedImage; 
+        let finalSeedDisplay; 
 
-        // Modal Elements
+        // Modals Elements
         let modelPathModal;
         let openModelButton;
         let modalModelPathInput;
         let cancelModelPathButton;
         let confirmModelPathButton;
         let currentModelPathDisplay; 
+
+        // New: Reset Confirmation Modal Elements
+        let resetConfirmModal;
+        let cancelResetButton;
+        let confirmResetButton;
 
         // Floating Message Elements
         let floatingMessageContainer;
@@ -789,7 +890,7 @@
         // Function to initialize DOM elements once the document is ready
         const initializeDOMElements = () => {
             serverAddressInput = document.getElementById('serverAddress');
-            imagineForm = document.getElementById('imagineForm'); // Now points to the encompassing form
+            imagineForm = document.getElementById('imagineForm'); 
             promptInput = document.getElementById('prompt'); 
             negativePromptInput = document.getElementById('negativePrompt'); 
             widthInput = document.getElementById('width');
@@ -806,6 +907,7 @@
             strengthInput = document.getElementById('strength');
             streamInput = document.getElementById('stream'); 
             generateButton = document.getElementById('generateButton'); 
+            resetSettingsButton = document.getElementById('resetSettingsButton'); 
             
             // Elements for image display and status
             aboveImageStatusText = document.getElementById('aboveImageStatusText');
@@ -821,6 +923,11 @@
             cancelModelPathButton = document.getElementById('cancelModelPathButton');
             confirmModelPathButton = document.getElementById('confirmModelPathButton');
             currentModelPathDisplay = document.getElementById('currentModelPathDisplay');
+
+            // New: Reset Confirmation Modal Elements
+            resetConfirmModal = document.getElementById('resetConfirmModal');
+            cancelResetButton = document.getElementById('cancelResetButton');
+            confirmResetButton = document.getElementById('confirmResetButton');
 
             // Floating Message Elements
             floatingMessageContainer = document.getElementById('floatingMessageContainer');
@@ -879,6 +986,7 @@
             modelPathModal.style.display = 'none';
             floatingMessageContainer.style.display = 'none';
             aboveImageStatusText.style.display = 'none';
+            resetConfirmModal.style.display = 'none'; // Ensure reset modal is hidden initially
 
             resetImageDisplayState();
 
@@ -943,6 +1051,39 @@
                 saveSettingsButton.addEventListener('click', handleSaveSettingsToFile);
             } else {
                 console.warn('Could not find saveSettingsButton. Check its ID.');
+            }
+
+            // Reset Settings button listener
+            if (resetSettingsButton) {
+                resetSettingsButton.addEventListener('click', () => {
+                    resetConfirmModal.style.display = 'flex'; // Show the custom confirmation modal
+                });
+            }
+
+            // New: Reset Confirmation Modal button listeners
+            if (cancelResetButton) {
+                cancelResetButton.addEventListener('click', () => {
+                    resetConfirmModal.style.display = 'none'; // Hide modal
+                    displayMessage('Сброс настровек отменен.', 'info'); 
+                });
+            }
+            if (confirmResetButton) {
+                confirmResetButton.addEventListener('click', () => {
+                    resetConfirmModal.style.display = 'none'; // Hide modal
+                    localStorage.removeItem('imagineSettings'); // Clear settings from local storage
+                    loadSettings(); // Reload default settings to UI
+                    resetImageDisplayState(); // Clear generated image display
+                    currentModelServerPath = ''; // Reset model path in memory
+                    updateModelPathDisplay(currentModelServerPath); // Update model path display
+                    updateImageFrameDimensions(); // Call this to reset image frame aspect ratio
+                    
+                    // Also clear any loaded input image
+                    base64ImageInput.value = '';
+                    imagePreview.src = '';
+                    imagePreviewContainer.classList.add('hidden');
+
+                    displayMessage('Настройки сброшены к значениям по умолчанию.', 'info');
+                });
             }
         };
 
@@ -1016,7 +1157,7 @@
                         displayFileName = fileName;
                     }
                 }
-                currentModelPathDisplay.innerHTML = `Текущая модель: <span class="text-gray-300 font-mono">${displayFileName}</span>`;
+                currentModelPathDisplay.innerHTML = `Текущая модель: <span class="font-mono" style="color: var(--input-text);">${displayFileName}</span>`;
             }
         };
 
@@ -1038,25 +1179,58 @@
             localStorage.setItem('imagineSettings', JSON.stringify(settings));
         };
 
+        // Modified: Load settings from local storage or set default values
         const loadSettings = () => {
-            const settings = JSON.parse(localStorage.getItem('imagineSettings'));
-            if (settings) {
-                serverAddressInput.value = settings.serverAddress || 'http://localhost:5000';
-                currentModelServerPath = settings.modelPath || ''; 
-                updateModelPathDisplay(currentModelServerPath); 
-                promptInput.value = settings.prompt || '';
-                negativePromptInput.value = settings.negativePrompt || '';
-                widthInput.value = settings.width || '512';
-                heightInput.value = settings.height || '512';
-                numStepsInput.value = settings.numSteps || '25';
-                guidanceInput.value = settings.guidance || '7.0';
-                samplerInput.value = settings.sampler || 'dpm++ 2m';
-                if (seedInput) { 
-                    seedInput.value = settings.seed || '';
+            const settingsString = localStorage.getItem('imagineSettings');
+            let settings = null;
+            if (settingsString) {
+                try {
+                    settings = JSON.parse(settingsString);
+                } catch (e) {
+                    console.error("Ошибка парсинга настроек из localStorage, используются значения по умолчанию.", e);
+                    // If parsing fails, treat as no settings
                 }
-                strengthInput.value = settings.strength || '0.8';
-                streamInput.value = settings.stream || '0';
             }
+
+            // Set default values for all fields
+            serverAddressInput.value = (settings && settings.serverAddress) || 'http://localhost:5000';
+            currentModelServerPath = (settings && settings.modelPath) || '';
+            updateModelPathDisplay(currentModelServerPath);
+            promptInput.value = (settings && settings.prompt) || '';
+            negativePromptInput.value = (settings && settings.negativePrompt) || '';
+            widthInput.value = (settings && settings.width) || '512';
+            heightInput.value = (settings && settings.height) || '512';
+            numStepsInput.value = (settings && settings.numSteps) || '25';
+            guidanceInput.value = (settings && settings.guidance) || '7.0';
+            samplerInput.value = (settings && settings.sampler) || 'dpm++ 2m';
+            if (seedInput) { // Check if seedInput element exists before accessing its value
+                seedInput.value = (settings && settings.seed) || '';
+            }
+            strengthInput.value = (settings && settings.strength) || '0.8';
+            streamInput.value = (settings && settings.stream) || '0';
+
+            // Also ensure input image preview is cleared if no image in settings
+            if (!settings || !settings.img) {
+                base64ImageInput.value = '';
+                imagePreview.src = '';
+                imagePreviewContainer.classList.add('hidden');
+            }
+
+            console.log('[DEBUG] Настройки загружены. Текущие значения:', {
+                serverAddress: serverAddressInput.value,
+                modelPath: currentModelServerPath,
+                prompt: promptInput.value,
+                negativePrompt: negativePromptInput.value,
+                width: widthInput.value,
+                height: heightInput.value,
+                numSteps: numStepsInput.value,
+                guidance: guidanceInput.value,
+                sampler: samplerInput.value,
+                seed: seedInput ? seedInput.value : 'N/A', // Display 'N/A' if element doesn't exist
+                strength: strengthInput.value,
+                stream: streamInput.value,
+                hasImage: !!base64ImageInput.value
+            });
         };
 
         // --- Message Display Function ---
@@ -1117,7 +1291,8 @@
                 }
                 if (loadSettingsButton) loadSettingsButton.disabled = true;
                 if (saveSettingsButton) saveSettingsButton.disabled = true;
-
+                if (resetSettingsButton) resetSettingsButton.disabled = true; // Disable reset button
+                
                 // Update image display state for generation
                 showGeneratingStateNoImage();
 
@@ -1139,6 +1314,7 @@
                 }
                 if (loadSettingsButton) loadSettingsButton.disabled = false;
                 if (saveSettingsButton) saveSettingsButton.disabled = false;
+                if (resetSettingsButton) resetSettingsButton.disabled = false; // Re-enable reset button
 
                 // Hide generation status and show final elements
                 hideAllGenerationStatus();
@@ -1338,7 +1514,7 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                // Format the timestamp as YYYYMMDD_HHMMSS.json
+                // Format the timestamp as ГГГГММДД_ЧЧММСС.json
                 const now = new Date();
                 const year = now.getFullYear();
                 const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -1359,10 +1535,9 @@
 
             } catch (error) {
                 console.error('Error saving settings to JSON file:', error);
-                displayMessage(`Error saving settings: ${error.message}`, 'error');
+                displayMessage(`Ошибка сохранения настроек: ${error.message}`, 'error');
             }
         };
-
 
         // --- Form Submission Handler / Stop Button Handler ---
         const handleFormSubmit = async (event) => {

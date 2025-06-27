@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imagine UI</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons CDN REMOVED - using HTML entities for arrows -->
+    <style>
+        /* Define CSS variables for the new color palette (VS Code like) */
+        :root {
+            --body-bg: #1e1e1e;
+            --card-bg: #252526;
+
+            --primary-text: #d4d4d4;
+            --input-text: #dcdcdc;
+            --placeholder-text: #808080;
+            --status-fading-text: #6a9955; /* For "Generating image..." */
+
+            --primary-border: #3c3c3c;
+            --input-border: #3c3c3c;
+            --input-border-focus: #007acc;
+
+            --input-bg: #1e1e1e;
+            --input-bg-focus: #323233;
+
+            --collapsible-header-bg: #2d2d2d;
+            --collapsible-header-hover-bg: #3c3c3c;
+            --collapsible-content-bg: #1e1e1e; /* Using body-bg for content consistency */
+
+            /* Messages/Notifications */
+            --info-msg-bg: #31708f;
+            --info-msg-border: #2892d7;
+            --info-msg-text: #d4d4d4;
+
+            --success-msg-bg: #1e3a22;
+            --success-msg-border: #2ea043;
+            --success-msg-text: #89d185;
+
+            --error-msg-bg: #512525;
+            --error-msg-border: #f48771;
+            --error-msg-text: #f48771;
+            
+            /* Misc */
+            --scrollbar-thumb: #4d4d4d;
+            --scrollbar-thumb-hover: #646464;
+            --image-frame-bg: #1e1e1e; /* Same as body-bg for empty frame */
+
+            /* Gradient Button Colors (KEPT AS IS, referencing existing hex values) */
+            --primary-btn-start: #6c47ff;
+            --primary-btn-end: #58a6ff;
+            --stop-btn-start: #ef4444;
+            --stop-btn-end: #dc2626;
+            --green-btn-start: #10b981;
+            --green-btn-end: #059669;
+            --disabled-btn-start: #30363d;
+            --disabled-btn-end: #444c56;
+        }
+
+        /* Overall body and container styling for a dark, modern look (VS Code like) */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--body-bg);
+            color: var(--primary-text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        /* Main layout grid for desktop */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr; /* Default to single column on mobile */
+            gap: 2rem;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        @media (min-width: 1024px) { /* On large screens, two columns */
+            .main-layout {
+                grid-template-columns: 1.2fr 2fr;
+            }
+        }
+
+        /* Sidebar specific styling (VS Code like card) */
+        .sidebar {
+            background-color: var(--card-bg);
+            border: 1px solid var(--primary-border);
+            border-radius: 1.25rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            padding: 2.5rem;
+            max-height: calc(100vh - 4rem);
+            overflow-y: auto;
+            position: sticky;
+            top: 2rem;
+        }
+
+        /* Main content area styling (VS Code like card) */
+        .content-area {
+            background-color: var(--card-bg);
+            border: 1px solid var(--primary-border);
+            border-radius: 1.25rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        /* Custom scrollbar for textareas, matching the dark theme */
+        textarea::-webkit-scrollbar,
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track,
+        .sidebar::-webkit-scrollbar-track {
+            background: var(--card-bg);
+            border-radius: 4px;
+        }
+        textarea::-webkit-scrollbar-thumb,
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 4px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover,
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover);
+        }
+
+        /* Styling for inputs and selects - Harmonized for VS Code theme */
+        .form-input-dark {
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--input-text);
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease-in-out;
+        }
+        .form-input-dark:focus {
+            border-color: var(--input-border-focus);
+            box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.5); /* Using input-border-focus with transparency */
+            background-color: var(--input-bg-focus);
+        }
+        .form-input-dark::placeholder {
+            color: var(--placeholder-text);
+        }
+
+        /* Styling for buttons (retained gradients as requested) */
+        .btn-primary {
+            background: linear-gradient(90deg, var(--primary-btn-start), var(--primary-btn-end));
+            color: white;
+            padding: 1rem 2.5rem;
+            font-weight: 600;
+            border-radius: 9999px;
+            box-shadow: 0 5px 15px rgba(108, 71, 255, 0.3);
+            transition: all 0.3s ease-in-out;
+            border: none;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 20px rgba(108, 71, 255, 0.4);
+        }
+        .btn-primary:disabled {
+            background: linear-gradient(90deg, var(--disabled-btn-start), var(--disabled-btn-end));
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* Stop button specific styling */
+        .btn-stop {
+            background: linear-gradient(90deg, var(--stop-btn-start), var(--stop-btn-end));
+            color: white;
+            padding: 1rem 2.5rem;
+            font-weight: 600;
+            border-radius: 9999px;
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+            transition: all 0.3s ease-in-out;
+            border: none;
+        }
+        .btn-stop:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        /* Green button style for "Select Model" and "Confirm" in modal */
+        .btn-green {
+            background: linear-gradient(90deg, var(--green-btn-start), var(--green-btn-end));
+            color: white;
+            padding: 1rem 2.5rem;
+            font-weight: 600;
+            border-radius: 9999px;
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+            transition: all 0.3s ease-in-out;
+            border: none;
+        }
+        .btn-green:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+        }
+        .btn-green:disabled {
+            background: linear-gradient(90deg, var(--disabled-btn-start), var(--disabled-btn-end));
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* Collapsible Section Styling */
+        .collapsible-header {
+            background-color: var(--collapsible-header-bg);
+            border: 1px solid var(--primary-border);
+            border-radius: 0.75rem;
+            padding: 1rem 1.5rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+        }
+        .collapsible-header:hover {
+            background-color: var(--collapsible-header-hover-bg);
+            border-color: var(--primary-border);
+        }
+        .collapsible-header.open {
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        .collapsible-content {
+            background-color: var(--collapsible-content-bg); /* Now explicitly using content-bg variable */
+            border: 1px solid var(--primary-border);
+            border-top: none;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            overflow: hidden;
+            max-height: 1000px;
+            opacity: 1;
+            margin-bottom: 1.5rem;
+        }
+        .collapsible-content.hidden {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            border: none;
+        }
+        .collapsible-content .grid {
+            margin-top: 0;
+            padding-top: 0;
+        }
+
+        /* Icon rotation for collapse */
+        .collapse-icon {
+            transition: transform 0.3s ease-in-out;
+            display: inline-block;
+            line-height: 1;
+        }
+        .collapse-icon.rotate-90 {
+            transform: rotate(90deg);
+        }
+        .collapse-icon.rotate-0 {
+            transform: rotate(0deg);
+        }
+
+        /* Styling for the image itself */
+        #generatedImage {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+            border-radius: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        /* Modal specific styling */
+        .modal {
+            background-color: rgba(0, 0, 0, 0.75);
+            transition: opacity 0.3s ease-in-out;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background-color: var(--card-bg);
+            border: 1px solid var(--primary-border);
+            border-radius: 1.25rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        .modal .form-input-dark {
+            background-color: var(--input-bg);
+            border-color: var(--input-border);
+        }
+        /* Modal Buttons - Applying consistent gradient styles */
+        .modal .btn-modal-primary {
+            background: linear-gradient(90deg, var(--green-btn-start), var(--green-btn-end));
+            color: white;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: 9999px;
+            box-shadow: 0 3px 10px rgba(16, 185, 129, 0.2);
+            transition: all 0.2s ease-in-out;
+            border: none;
+        }
+        .modal .btn-modal-primary:hover {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        /* === UPDATED STYLING FOR GRAY BUTTONS (VS Code STYLE) === */
+        .modal .btn-modal-secondary { /* 'Cancel' and 'Save Settings to JSON' */
+            background-color: var(--collapsible-header-bg); /* Solid color from VS Code palette */
+            border: 1px solid var(--primary-border); /* Consistent border */
+            color: var(--primary-text);
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: 0.75rem; /* More square-ish, VS Code like */
+            box-shadow: none; /* No shadow by default */
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            /* Removed default border as it's set by border property */
+        }
+        .modal .btn-modal-secondary:hover {
+            background-color: var(--collapsible-header-hover-bg); /* Darker hover */
+            transform: none; /* Remove translation/scale on hover */
+            box-shadow: none; /* No shadow on hover */
+        }
+        /* === END UPDATED STYLING === */
+
+
+        /* Floating Message Pop-up */
+        #floatingMessageContainer {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            max-width: 350px;
+            z-index: 1000;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 500;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+            transform: translateX(120%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #floatingMessageContainer.show {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #floatingMessageContainer.hide-animation {
+            transform: translateX(120%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Colors for pop-up types, info/status messages are now a darker neutral gray */
+        #floatingMessageContainer.info {
+            background-color: var(--info-msg-bg);
+            border: 1px solid var(--info-msg-border);
+            color: var(--info-msg-text);
+        }
+        #floatingMessageContainer.success {
+            background-color: var(--success-msg-bg);
+            border: 1px solid var(--success-msg-border);
+            color: var(--success-msg-text);
+        }
+        #floatingMessageContainer.error {
+            background-color: var(--error-msg-bg);
+            border: 1px solid var(--error-msg-border);
+            color: var(--error-msg-text);
+        }
+
+        /* === UPDATED STYLING FOR GRAY BUTTONS (VS Code STYLE) === */
+        /* Style for the file input label to make it look like a button */
+        .file-input-button {
+            display: inline-block;
+            cursor: pointer;
+            text-align: center;
+            width: 100%;
+            font-size: 0.875rem;
+            background-color: var(--collapsible-header-bg); /* Solid color from VS Code palette */
+            border: 1px solid var(--primary-border); /* Consistent border */
+            color: var(--primary-text);
+            padding: 1rem 2.5rem;
+            font-weight: 600;
+            border-radius: 0.75rem; /* More square-ish, VS Code like */
+            box-shadow: none; /* No shadow by default */
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            /* Removed default border as it's set by border property */
+        }
+        .file-input-button:hover {
+            transform: none; /* Remove translation/scale on hover */
+            background-color: var(--collapsible-header-hover-bg); /* Darker hover */
+            box-shadow: none; /* No shadow on hover */
+        }
+        /* Disable state for file input button */
+        .file-input-button[data-disabled="true"] {
+            background: linear-gradient(90deg, var(--disabled-btn-start), var(--disabled-btn-end));
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+            opacity: 0.7;
+            pointer-events: none; /* Crucial for disabling interaction */
+        }
+        /* === END UPDATED STYLING === */
+
+
+        /* Animation for fading text */
+        @keyframes fade-cycle {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        .fade-animation {
+            animation: fade-cycle 1.5s infinite alternate;
+        }
+
+        /* Image frame styling */
+        #imageFrame {
+            width: 100%;
+            height: auto;
+            max-width: 100%;
+            max-height: 100%; 
+            box-sizing: border-box;
+            position: relative;
+            background-color: var(--image-frame-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--primary-border);
+            border-radius: 0.75rem;
+            min-height: 200px;
+            overflow: hidden;
+            aspect-ratio: var(--image-aspect-ratio, 1/1);
+        }
+
+        #imageFrame #generatedImage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        #placeholderTextOverlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--placeholder-text);
+            font-size: 1.5rem;
+            font-weight: bold;
+            transition: opacity 0.3s ease-in-out;
+            z-index: 20;
+        }
+
+        /* Override Tailwind classes for specific elements to match the palette */
+        .text-gray-300 {
+            color: var(--primary-text);
+        }
+        .text-gray-400 {
+            color: var(--primary-text); /* Labels, slightly lighter than primary text in palette */
+        }
+        /* Adjust for generic text-gray-500 if it's not explicitly overridden elsewhere */
+        .text-gray-500 {
+            color: var(--placeholder-text); /* Used for smaller informational text */
+        }
+        .text-white { /* Ensure main heading remains white for contrast */
+            color: white;
+        }
+        .text-red-500 { /* Keep required asterisk red */
+            color: #ef4444; 
+        }
+    </style>
+</head>
+<body>
+    <form id="imagineForm" class="contents"> <!-- Form now wraps the entire layout -->
+        <div class="main-layout">
+            <div class="col-span-full text-center mb-8">
+                <h1 class="text-4xl md:text-5xl font-bold text-white">
+                    ✨ Imagine UI
+                </h1>
+            </div>
+
+            <div class="sidebar">
+                <div class="grid grid-cols-1 gap-y-4">
+                    <!-- START: Configuration - Now the first block and collapsed by default -->
+                    <div class="collapsible-container">
+                        <div class="collapsible-header" data-target="jsonSettings">
+                            <h2 class="text-lg font-semibold text-gray-300">Configuration</h2>
+                            <span class="collapse-icon">▶</span> <!-- Right arrow -->
+                        </div>
+                        <div id="jsonSettings" class="collapsible-content">
+                            <div class="flex flex-col items-center gap-2">
+                                <label for="loadJsonFileInput" id="loadSettingsButton" class="file-input-button">
+                                    Load Settings from JSON
+                                </label>
+                                <input type="file" id="loadJsonFileInput" accept=".json" class="hidden">
+                                <button type="button" id="saveSettingsButton" class="btn-modal-secondary w-full max-w-xs px-6 py-3 text-sm">
+                                    Save Settings to JSON
+                                </button>
+                                <button type="button" id="resetSettingsButton" class="btn-stop w-full max-w-xs px-6 py-3 text-sm">
+                                    Reset Settings
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- END: Configuration -->
+
+                    <!-- START: Server & Model - Now the second block and expanded by default -->
+                    <div class="collapsible-container">
+                        <div class="collapsible-header" data-target="serverModelSettings">
+                            <h2 class="text-lg font-semibold text-gray-300">Server & Model</h2>
+                            <span class="collapse-icon">▶</span> <!-- Right arrow -->
+                        </div>
+                        <div id="serverModelSettings" class="collapsible-content">
+                            <div class="mb-4">
+                                <label for="serverAddress" class="block text-gray-400 text-sm font-medium mb-2">
+                                    Imagine Server Address:
+                                </label>
+                                <input
+                                    type="text"
+                                    id="serverAddress"
+                                    value="http://localhost:5000"
+                                    placeholder="e.g.: http://localhost:5000"
+                                    class="w-full form-input-dark"
+                                />
+                                <p class="text-xs text-gray-500 mt-2">
+                                    Ensure your Imagine server is running and accessible.
+                                </p>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <button type="button" id="openModelButton" class="btn-green w-full max-w-xs px-6 py-3 text-sm">
+                                    Select Model
+                                </button>
+                                <p id="currentModelPathDisplay" class="text-xs text-gray-500 mt-2 text-center break-all">
+                                    Current Model: <span class="font-mono" style="color: var(--input-text);">default</span>
+                                </p>
+                                <input type="file" id="hiddenModelFileInput" accept=".safetensors,.ckpt" class="hidden">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- END: Server & Model -->
+
+                    <!-- START: Generation Parameters - Stays in its place -->
+                    <div class="collapsible-container">
+                        <div class="collapsible-header" data-target="genParams">
+                            <h2 class="text-lg font-semibold text-gray-300">Generation Parameters</h2>
+                            <span class="collapse-icon">▶</span> <!-- Right arrow -->
+                        </div>
+                        <div id="genParams" class="collapsible-content">
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label for="width" class="block text-gray-400 text-sm font-medium mb-2">
+                                        Width:
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="width"
+                                        value="512"
+                                        min="1"
+                                        class="w-full form-input-dark"
+                                    />
+                                </div>
+                                <div>
+                                    <label for="height" class="block text-gray-400 text-sm font-medium mb-2">
+                                        Height:
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="height"
+                                        value="512"
+                                        min="1"
+                                        class="w-full form-input-dark"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label for="numSteps" class="block text-gray-400 text-sm font-medium mb-2">
+                                        Number of Steps:
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="numSteps"
+                                        value="25"
+                                        min="1"
+                                        class="w-full form-input-dark"
+                                    />
+                                </div>
+                                <div>
+                                    <label for="guidance" class="block text-gray-400 text-sm font-medium mb-2">
+                                        Guidance Scale:
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="guidance"
+                                        value="7.0"
+                                        step="0.1"
+                                        class="w-full form-input-dark"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-4 mb-4">
+                                <div>
+                                    <label for="sampler" class="block text-gray-400 text-sm font-medium mb-2">
+                                        Sampler:
+                                    </label>
+                                    <select
+                                        id="sampler"
+                                        class="w-full form-input-dark"
+                                    >
+                                        <option value="dpm++ 2m">dpm++ 2m</option>
+                                        <option value="ddim">ddim</option>
+                                        <option value="euler">euler</option>
+                                        <option value="euler a">euler a</option>
+                                        <option value="heun">heun</option>
+                                        <option value="lms">lms</option>
+                                        <option value="dpm++ 2s">dpm++ 2s</option>
+                                        <option value="dpm++ sde">dpm++ sde</option>
+                                        <option value="dpm2">dpm2</option>
+                                        <option value="dpm2 a">dpm2 a</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="seed" class="block text-gray-400 text-sm font-medium mb-2">
+                                        Seed (Leave empty for random):
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="seed"
+                                        class="w-full form-input-dark"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="stream" class="block text-gray-400 text-sm font-medium mb-2">
+                                    Stream Steps (0 to disable):
+                                </label>
+                                <input
+                                    type="number"
+                                    id="stream"
+                                    value="0"
+                                    min="0"
+                                    class="w-full form-input-dark"
+                                />
+                                <p class="text-xs text-gray-500 mt-2">
+                                    If > 0, intermediate images will be streamed every N steps.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- END: Generation Parameters -->
+
+                    <!-- START: Input Image - Stays in its place -->
+                    <div class="collapsible-container">
+                        <div class="collapsible-header" data-target="img2imgSettings">
+                            <h2 class="text-lg font-semibold text-gray-300">Input Image</h2>
+                            <span class="collapse-icon">▶</span> <!-- Right arrow -->
+                        </div>
+                        <div id="img2imgSettings" class="collapsible-content">
+                            <div class="mb-4">
+                                <label for="imgUpload" class="block text-gray-400 text-sm font-medium mb-2">
+                                    Upload Image:
+                                </label>
+                                <!-- Added id="fileInputButton" for more precise selection in JS -->
+                                <label for="imgUpload" id="fileInputButton" class="file-input-button">
+                                    Choose File
+                                </label>
+                                <input
+                                    type="file"
+                                    id="imgUpload"
+                                    accept="image/*"
+                                    class="hidden" />
+                                <p class="text-xs text-gray-500 mt-2">
+                                    Select an image for Image2Image mode.
+                                </p>
+                                <div id="imagePreviewContainer" class="mt-4 hidden">
+                                    <p class="text-gray-400 text-sm font-medium mb-2">Preview:</p>
+                                    <img id="imagePreview" class="max-w-full h-auto rounded-md border border-gray-600 object-contain" />
+                                </div>
+                                <input type="hidden" id="base64Image" />
+                            </div>
+
+                            <div>
+                                <label for="strength" class="block text-gray-400 text-sm font-medium mb-2">
+                                    Denoising Strength (for Image2Image):
+                                </label>
+                                <input
+                                    type="number"
+                                    id="strength"
+                                    value="0.8"
+                                    step="0.01"
+                                    min="0.0"
+                                    max="1.0"
+                                    class="w-full form-input-dark"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <!-- END: Input Image -->
+                </div>
+            </div>
+
+            <div class="content-area">
+                <!-- Hidden class removed, visibility controlled by JS -->
+                <div id="floatingMessageContainer">
+                    <p id="floatingMessageText"></p>
+                </div>
+
+                <!-- Hidden class removed, visibility controlled by JS -->
+                <div id="aboveImageStatusText" class="text-xl font-bold" style="color: var(--status-fading-text);">
+                    Generating image...
+                </div>
+
+                <!-- Main Image Frame/Container -->
+                <div id="imageFrame" class="relative flex flex-col items-center justify-content" style="border: 1px solid var(--primary-border); background-color: var(--image-frame-bg);">
+                    <!-- This overlay is shown when no image is present (initial or generating with no image yet) -->
+                    <div id="placeholderTextOverlay" class="absolute inset-0 flex items-center justify-center text-xl font-bold transition-opacity duration-300 ease-in-out" style="color: var(--placeholder-text);">
+                        Click 'Generate'
+                    </div>
+                    <!-- Removed src and hidden class, visibility controlled by JS -->
+                    <img id="generatedImage" class="max-w-full max-h-full w-full h-full object-contain relative z-5" alt="Generated image" />
+                </div>
+                <!-- Moved outside imageFrame, hidden class removed, now managed by JS -->
+                <p id="finalSeed" class="text-sm mt-4" style="color: var(--primary-text);">Seed: <span class="font-mono" style="color: var(--input-text);"></span></p>
+                
+                <!-- START: Prompts - Moved block below the image, now collapsible -->
+                <div class="collapsible-container w-full mt-8">
+                    <div class="collapsible-header" data-target="promptSettings">
+                        <h2 class="text-lg font-semibold text-gray-300">Prompts</h2>
+                        <span class="collapse-icon">▶</span> <!-- Right arrow -->
+                    </div>
+                    <div id="promptSettings" class="collapsible-content">
+                        <div class="mb-4">
+                            <label for="prompt" class="block text-gray-400 text-sm font-medium mb-2">
+                                Prompt <span class="text-red-500">*</span>:
+                            </label>
+                            <textarea
+                                id="prompt"
+                                rows="4"
+                                class="w-full form-input-dark"
+                                placeholder="e.g.: a photo of an astronaut riding a horse on mars, epic, cinematic, detailed"
+                                required
+                            ></textarea>
+                        </div>
+                        <div>
+                            <label for="negativePrompt" class="block text-gray-400 text-sm font-medium mb-2">
+                                Negative Prompt:
+                            </label>
+                            <textarea
+                                id="negativePrompt"
+                                rows="3"
+                                class="w-full form-input-dark"
+                                placeholder="e.g.: ugly, deformed, blurry, low quality"
+                            ></textarea>
+                        </div>
+                    </div>
+                </div>
+                <!-- END: Prompts -->
+
+                <!-- START: Generate Button - Moved below the Prompts block -->
+                <div class="col-span-full text-center mt-4">
+                    <button
+                        type="submit"
+                        id="generateButton"
+                        class="btn-primary"
+                    >
+                        Generate
+                    </button>
+                </div>
+                <!-- END: Generate Button -->
+            </div>
+        </div>
+    </form>
+
+    <!-- Modal for model path selection -->
+    <div id="modelPathModal" class="fixed inset-0 modal flex items-center justify-center z-50 p-4">
+        <div class="modal-content p-6 w-full max-w-md">
+            <h3 class="text-xl font-semibold text-white mb-4">Specify Model File Path on Server</h3>
+            <input
+                type="text"
+                id="modalModelPathInput"
+                placeholder="e.g.: /home/user/models/my_model.safetensors"
+                class="w-full form-input-dark mb-4"
+            />
+            <p class="text-sm text-gray-400 mb-6">
+                Enter the **full path to the model file on your Imagine server**.
+                This is not a path to a local file on your computer.
+                Leave empty to use the server's default model.
+            </p>
+            <div class="flex justify-end space-x-4">
+                <button type="button" id="cancelModelPathButton" class="btn-modal-secondary">
+                    Cancel
+                </button>
+                <button type="button" id="confirmModelPathButton" class="btn-green">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal (for Reset Settings) -->
+    <div id="resetConfirmModal" class="fixed inset-0 modal flex items-center justify-center z-50 p-4" style="display: none;">
+        <div class="modal-content p-6 w-full max-w-md text-center">
+            <h3 class="text-xl font-semibold text-white mb-4">Confirm Reset Settings</h3>
+            <p class="text-gray-400 mb-6">Are you sure you want to reset all settings to their default values? This action is irreversible.</p>
+            <div class="flex justify-center space-x-4">
+                <button type="button" id="cancelResetButton" class="btn-modal-secondary">
+                    Cancel
+                </button>
+                <button type="button" id="confirmResetButton" class="btn-stop">
+                    Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements - Declared with `let` to be initialized after DOM is ready
+        let serverAddressInput;
+        let imagineForm;
+        let promptInput;
+        let negativePromptInput;
+        let widthInput;
+        let heightInput;
+        let numStepsInput;
+        let guidanceInput;
+        let samplerInput;
+        let seedInput; 
+        let imgUploadInput;
+        let imgUploadButtonLabel; 
+        let imagePreviewContainer;
+        let imagePreview;
+        let base64ImageInput;
+        let strengthInput;
+        let streamInput; 
+        let generateButton;
+        let resetSettingsButton; 
+
+        // Elements for image display and status
+        let aboveImageStatusText; 
+        let imageFrame; 
+        let placeholderTextOverlay; 
+        let generatedImage; 
+        let finalSeedDisplay; 
+
+        // Modals Elements
+        let modelPathModal;
+        let openModelButton;
+        let modalModelPathInput;
+        let cancelModelPathButton;
+        let confirmModelPathButton;
+        let currentModelPathDisplay; 
+
+        // New: Reset Confirmation Modal Elements
+        let resetConfirmModal;
+        let cancelResetButton;
+        let confirmResetButton;
+
+        // Floating Message Elements
+        let floatingMessageContainer;
+        let floatingMessageText;
+
+        // New elements for JSON import/export
+        let loadSettingsButton;
+        let loadJsonFileInput;
+        let saveSettingsButton;
+
+        let currentModelServerPath = ''; 
+        let messageTimeoutId = null; 
+        let currentStep = 0; 
+
+        // Function to initialize DOM elements once the document is ready
+        const initializeDOMElements = () => {
+            serverAddressInput = document.getElementById('serverAddress');
+            imagineForm = document.getElementById('imagineForm'); 
+            promptInput = document.getElementById('prompt'); 
+            negativePromptInput = document.getElementById('negativePrompt'); 
+            widthInput = document.getElementById('width');
+            heightInput = document.getElementById('height');
+            numStepsInput = document.getElementById('numSteps');
+            guidanceInput = document.getElementById('guidance');
+            samplerInput = document.getElementById('sampler');
+            seedInput = document.getElementById('seed'); 
+            imgUploadInput = document.getElementById('imgUpload');
+            imgUploadButtonLabel = document.getElementById('fileInputButton'); 
+            imagePreviewContainer = document.getElementById('imagePreviewContainer');
+            imagePreview = document.getElementById('imagePreview');
+            base64ImageInput = document.getElementById('base64Image');
+            strengthInput = document.getElementById('strength');
+            streamInput = document.getElementById('stream'); 
+            generateButton = document.getElementById('generateButton'); 
+            resetSettingsButton = document.getElementById('resetSettingsButton'); 
+            
+            // Elements for image display and status
+            aboveImageStatusText = document.getElementById('aboveImageStatusText');
+            imageFrame = document.getElementById('imageFrame');
+            placeholderTextOverlay = document.getElementById('placeholderTextOverlay');
+            generatedImage = document.getElementById('generatedImage');
+            finalSeedDisplay = document.getElementById('finalSeed'); 
+
+            // Modal Elements
+            modelPathModal = document.getElementById('modelPathModal');
+            openModelButton = document.getElementById('openModelButton');
+            modalModelPathInput = document.getElementById('modalModelPathInput');
+            cancelModelPathButton = document.getElementById('cancelModelPathButton');
+            confirmModelPathButton = document.getElementById('confirmModelPathButton');
+            currentModelPathDisplay = document.getElementById('currentModelPathDisplay');
+
+            // New: Reset Confirmation Modal Elements
+            resetConfirmModal = document.getElementById('resetConfirmModal');
+            cancelResetButton = document.getElementById('cancelResetButton');
+            confirmResetButton = document.getElementById('confirmResetButton');
+
+            // Floating Message Elements
+            floatingMessageContainer = document.getElementById('floatingMessageContainer');
+            floatingMessageText = document.getElementById('floatingMessageText');
+
+            // New elements for JSON import/export
+            loadSettingsButton = document.getElementById('loadSettingsButton'); 
+            loadJsonFileInput = document.getElementById('loadJsonFileInput');
+            saveSettingsButton = document.getElementById('saveSettingsButton');
+
+
+            // Set initial state of collapsible sections
+            document.querySelectorAll('.collapsible-container').forEach(container => {
+                const header = container.querySelector('.collapsible-header');
+                const content = container.querySelector('.collapsible-content');
+                const icon = header ? header.querySelector('.collapse-icon') : null;
+
+                if (content && header && icon) { 
+                    const targetId = header.dataset.target;
+                    // 'Server & Model' should be open by default
+                    if (targetId === 'serverModelSettings') {
+                        content.classList.remove('hidden');
+                        header.classList.add('open');
+                        icon.textContent = '▼'; // Down arrow Unicode
+                        icon.classList.remove('rotate-90');
+                        icon.classList.add('rotate-0');
+                        content.style.maxHeight = ''; 
+                        content.style.opacity = 1;
+                    } else { // All other sections (Configuration, Generation Parameters, Input Image, Prompts) collapsed by default
+                        content.classList.add('hidden');
+                        header.classList.remove('open');
+                        icon.textContent = '▶'; // Right arrow Unicode
+                        icon.classList.remove('rotate-0');
+                        icon.classList.add('rotate-90');
+                        content.style.maxHeight = '0';
+                        content.style.opacity = 0;
+                    }
+                }
+            });
+
+            // Set initial image frame dimensions and listeners
+            const updateImageFrameDimensions = () => {
+                const width = parseInt(widthInput.value) || 512;
+                const height = parseInt(heightInput.value) || 512;
+                // Set the aspect ratio property and let CSS handle the responsiveness based on width: 100%
+                imageFrame.style.setProperty('--image-aspect-ratio', `${width}/${height}`);
+            };
+
+            if (widthInput && heightInput) {
+                widthInput.addEventListener('input', updateImageFrameDimensions);
+                heightInput.addEventListener('input', updateImageFrameDimensions);
+                updateImageFrameDimensions(); // Set initial dimensions
+            }
+
+            // Initial display for image placeholder and hiding all other dynamic elements
+            modelPathModal.style.display = 'none';
+            floatingMessageContainer.style.display = 'none';
+            aboveImageStatusText.style.display = 'none';
+            resetConfirmModal.style.display = 'none'; // Ensure reset modal is hidden initially
+
+            resetImageDisplayState();
+
+
+            // Attach event listeners
+            if (imgUploadInput) { 
+                imgUploadInput.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            base64ImageInput.value = e.target.result;
+                            imagePreview.src = e.target.result;
+                            imagePreviewContainer.classList.remove('hidden');
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        base64ImageInput.value = '';
+                        imagePreview.src = '';
+                        imagePreviewContainer.classList.add('hidden');
+                    }
+                });
+            }
+
+            if (imagineForm) { 
+                imagineForm.addEventListener('submit', handleFormSubmit);
+            }
+
+            document.querySelectorAll('.collapsible-header').forEach(header => {
+                header.addEventListener('click', handleCollapsibleClick);
+            });
+
+            // Modal Event Listeners
+            if (openModelButton && modalModelPathInput && modelPathModal && cancelModelPathButton && confirmModelPathButton) {
+                openModelButton.addEventListener('click', () => {
+                    modalModelPathInput.value = currentModelServerPath; 
+                    modelPathModal.style.display = 'flex'; // Show modal
+                });
+            
+                cancelModelPathButton.addEventListener('click', () => {
+                    modalModelPathInput.value = ''; // Clear input on cancel
+                    modelPathModal.style.display = 'none'; // Hide modal
+                });
+            
+                confirmModelPathButton.addEventListener('click', () => {
+                    currentModelServerPath = modalModelPathInput.value.trim();
+                    updateModelPathDisplay(currentModelServerPath); 
+                    modelPathModal.style.display = 'none'; // Hide modal
+                    saveSettings(); 
+                });
+            }
+
+            // JSON Import/Export Event Listeners
+            if (loadSettingsButton && loadJsonFileInput) {
+                console.log('Attaching load settings button change listener.'); 
+                loadJsonFileInput.addEventListener('change', handleLoadSettingsFromFile);
+            } else {
+                console.warn('Could not find loadSettingsButton or loadJsonFileInput. Check their IDs.');
+            }
+            
+            if (saveSettingsButton) {
+                saveSettingsButton.addEventListener('click', handleSaveSettingsToFile);
+            } else {
+                console.warn('Could not find saveSettingsButton. Check its ID.');
+            }
+
+            // Reset Settings button listener
+            if (resetSettingsButton) {
+                resetSettingsButton.addEventListener('click', () => {
+                    resetConfirmModal.style.display = 'flex'; // Show the custom confirmation modal
+                });
+            }
+
+            // New: Reset Confirmation Modal button listeners
+            if (cancelResetButton) {
+                cancelResetButton.addEventListener('click', () => {
+                    resetConfirmModal.style.display = 'none'; // Hide modal
+                    displayMessage('Settings reset cancelled.', 'info'); 
+                });
+            }
+            if (confirmResetButton) {
+                confirmResetButton.addEventListener('click', () => {
+                    resetConfirmModal.style.display = 'none'; // Hide modal
+                    localStorage.removeItem('imagineSettings'); // Clear settings from local storage
+                    loadSettings(); // Reload default settings to UI
+                    resetImageDisplayState(); // Clear generated image display
+                    currentModelServerPath = ''; // Reset model path in memory
+                    updateModelPathDisplay(currentModelServerPath); // Update model path display
+                    updateImageFrameDimensions(); // Call this to reset image frame aspect ratio
+                    
+                    // Also clear any loaded input image
+                    base64ImageInput.value = '';
+                    imagePreview.src = '';
+                    imagePreviewContainer.classList.add('hidden');
+
+                    displayMessage('Settings reset to default values.', 'info');
+                });
+            }
+        };
+
+
+        // Define the required image prefix
+        const IMAGE_DATA_PREFIX = "data:image/png;base64,"; 
+
+        // Global variable for AbortController
+        let currentAbortController = null;
+        let isGenerating = false;
+
+        // --- Image Display State Management ---
+        const resetImageDisplayState = () => {
+            generatedImage.src = ''; // Explicitly set src to empty string
+            generatedImage.style.display = 'none'; // Ensure it's hidden
+            placeholderTextOverlay.textContent = 'Click \'Generate\'';
+            placeholderTextOverlay.style.display = 'flex'; // Show placeholder as flex
+            placeholderTextOverlay.classList.remove('fade-animation'); // Ensure no fade on initial state
+            aboveImageStatusText.style.display = 'none'; // Hide above text
+            aboveImageStatusText.classList.remove('fade-animation'); // Ensure no fade
+            if (finalSeedDisplay) { // Check if elements exist
+                finalSeedDisplay.querySelector('span').textContent = ''; // Clear seed text
+                finalSeedDisplay.style.display = 'none'; // Hide seed display's parent
+            }
+        };
+
+        const showGeneratingStateNoImage = () => {
+            generatedImage.src = ''; // Ensure image source is cleared
+            generatedImage.style.display = 'none'; // Keep image hidden
+            placeholderTextOverlay.textContent = 'Generating image...';
+            placeholderTextOverlay.style.display = 'flex'; // Show placeholder
+            placeholderTextOverlay.classList.add('fade-animation'); // Add fade for generating text
+            aboveImageStatusText.style.display = 'none'; // Keep above text hidden
+            aboveImageStatusText.classList.remove('fade-animation'); // Ensure no fade
+            if (finalSeedDisplay) {
+                finalSeedDisplay.style.display = 'none'; // Hide seed display's parent
+            }
+        };
+
+        const showGeneratingStateWithImage = () => {
+            placeholderTextOverlay.style.display = 'none'; // Hide inner placeholder
+            placeholderTextOverlay.classList.remove('fade-animation'); // Remove animation
+            generatedImage.style.display = 'block'; // Show image
+            aboveImageStatusText.style.display = 'block'; // Show above image status
+            aboveImageStatusText.classList.add('fade-animation'); // Add fade to above text
+            if (finalSeedDisplay) {
+                finalSeedDisplay.style.display = 'none'; // Keep seed hidden during generation
+            }
+        };
+
+        const hideAllGenerationStatus = () => {
+            placeholderTextOverlay.style.display = 'none';
+            placeholderTextOverlay.classList.remove('fade-animation');
+            aboveImageStatusText.style.display = 'none';
+            aboveImageStatusText.classList.remove('fade-animation');
+            // Do not hide generatedImage or finalSeed here, let setGeneratingState handle the final state.
+        };
+
+        // --- Local Storage Functions ---
+        const updateModelPathDisplay = (fullPath) => {
+            if (currentModelPathDisplay) {
+                let displayFileName = 'default';
+                if (fullPath) {
+                    const parts = fullPath.split(/[/\\]/); 
+                    let fileName = parts.pop(); 
+                    if (fileName) {
+                        const dotIndex = fileName.lastIndexOf('.');
+                        if (dotIndex > 0) { 
+                            fileName = fileName.substring(0, dotIndex);
+                        }
+                        displayFileName = fileName;
+                    }
+                }
+                currentModelPathDisplay.innerHTML = `Current Model: <span class="font-mono" style="color: var(--input-text);">${displayFileName}</span>`;
+            }
+        };
+
+        const saveSettings = () => {
+            const settings = {
+                serverAddress: serverAddressInput.value,
+                modelPath: currentModelServerPath, 
+                prompt: promptInput.value,
+                negativePrompt: negativePromptInput.value,
+                width: widthInput.value,
+                height: heightInput.value,
+                numSteps: numStepsInput.value,
+                guidance: guidanceInput.value,
+                sampler: samplerInput.value,
+                seed: seedInput ? seedInput.value : '', 
+                strength: strengthInput.value,
+                stream: streamInput.value,
+            };
+            localStorage.setItem('imagineSettings', JSON.stringify(settings));
+        };
+
+        // Modified: Load settings from local storage or set default values
+        const loadSettings = () => {
+            const settingsString = localStorage.getItem('imagineSettings');
+            let settings = null;
+            if (settingsString) {
+                try {
+                    settings = JSON.parse(settingsString);
+                } catch (e) {
+                    console.error("Error parsing settings from localStorage, using default values.", e);
+                    // If parsing fails, treat as no settings
+                }
+            }
+
+            // Set default values for all fields
+            serverAddressInput.value = (settings && settings.serverAddress) || 'http://localhost:5000';
+            currentModelServerPath = (settings && settings.modelPath) || '';
+            updateModelPathDisplay(currentModelServerPath);
+            promptInput.value = (settings && settings.prompt) || '';
+            negativePromptInput.value = (settings && settings.negativePrompt) || '';
+            widthInput.value = (settings && settings.width) || '512';
+            heightInput.value = (settings && settings.height) || '512';
+            numStepsInput.value = (settings && settings.numSteps) || '25';
+            guidanceInput.value = (settings && settings.guidance) || '7.0';
+            samplerInput.value = (settings && settings.sampler) || 'dpm++ 2m';
+            if (seedInput) { // Check if seedInput element exists before accessing its value
+                seedInput.value = (settings && settings.seed) || '';
+            }
+            strengthInput.value = (settings && settings.strength) || '0.8';
+            streamInput.value = (settings && settings.stream) || '0';
+
+            // Also ensure input image preview is cleared if no image in settings
+            if (!settings || !settings.img) {
+                base64ImageInput.value = '';
+                imagePreview.src = '';
+                imagePreviewContainer.classList.add('hidden');
+            }
+
+            console.log('[DEBUG] Settings loaded. Current values:', {
+                serverAddress: serverAddressInput.value,
+                modelPath: currentModelServerPath,
+                prompt: promptInput.value,
+                negativePrompt: negativePromptInput.value,
+                width: widthInput.value,
+                height: heightInput.value,
+                numSteps: numStepsInput.value,
+                guidance: guidanceInput.value,
+                sampler: samplerInput.value,
+                seed: seedInput ? seedInput.value : 'N/A', // Display 'N/A' if element doesn't exist
+                strength: strengthInput.value,
+                stream: streamInput.value,
+                hasImage: !!base64ImageInput.value
+            });
+        };
+
+        // --- Message Display Function ---
+        const displayMessage = (message, type = 'info', duration = 3000) => {
+            floatingMessageText.textContent = message;
+            floatingMessageContainer.classList.remove('hide-animation');
+            floatingMessageContainer.classList.add(type, 'show'); 
+            floatingMessageContainer.style.display = 'block'; // Ensure it's visible
+            
+            if (messageTimeoutId) {
+                clearTimeout(messageTimeoutId);
+            }
+
+            messageTimeoutId = setTimeout(() => {
+                floatingMessageContainer.classList.remove('show');
+                floatingMessageContainer.classList.add('hide-animation');
+                setTimeout(() => {
+                    floatingMessageContainer.style.display = 'none'; // Completely hide
+                    floatingMessageContainer.classList.remove('hide-animation'); 
+                    floatingMessageText.textContent = ''; 
+                }, 400); 
+            }, duration);
+        };
+
+        const clearMessages = () => {
+            if (messageTimeoutId) {
+                clearTimeout(messageTimeoutId);
+                messageTimeoutId = null;
+            }
+            floatingMessageContainer.classList.remove('show', 'hide-animation');
+            floatingMessageContainer.style.display = 'none'; // Completely hide
+            floatingMessageText.textContent = '';
+            floatingMessageContainer.classList.remove('info', 'success', 'error'); 
+        };
+
+        // --- Button State Management ---
+        const setGeneratingState = (generating) => {
+            isGenerating = generating;
+            if (generating) {
+                generateButton.textContent = 'Stop';
+                generateButton.classList.remove('btn-primary');
+                generateButton.classList.add('btn-stop');
+                // Disable all relevant form inputs during generation
+                // Since imagineForm now wraps everything, this correctly disables/enables all inputs
+                Array.from(imagineForm.elements).forEach(element => {
+                    // Make sure 'generateButton' is not disabled if it's the stop button
+                    if (element.id !== 'generateButton') { 
+                        element.disabled = true;
+                    }
+                });
+                // Specifically handle the custom file input button label
+                if (imgUploadButtonLabel) {
+                    imgUploadButtonLabel.setAttribute('data-disabled', 'true');
+                    imgUploadInput.disabled = true; 
+                }
+                if (openModelButton) {
+                    openModelButton.disabled = true;
+                }
+                if (loadSettingsButton) loadSettingsButton.disabled = true;
+                if (saveSettingsButton) saveSettingsButton.disabled = true;
+                if (resetSettingsButton) resetSettingsButton.disabled = true; // Disable reset button
+                
+                // Update image display state for generation
+                showGeneratingStateNoImage();
+
+            } else {
+                generateButton.textContent = 'Generate'; 
+                generateButton.classList.remove('btn-stop');
+                generateButton.classList.add('btn-primary');
+                // Re-enable form inputs
+                Array.from(imagineForm.elements).forEach(element => {
+                    element.disabled = false;
+                });
+                // Specifically handle the custom file input button label
+                if (imgUploadButtonLabel) {
+                    imgUploadButtonLabel.removeAttribute('data-disabled');
+                    imgUploadInput.disabled = false; 
+                }
+                if (openModelButton) {
+                    openModelButton.disabled = false;
+                }
+                if (loadSettingsButton) loadSettingsButton.disabled = false;
+                if (saveSettingsButton) saveSettingsButton.disabled = false;
+                if (resetSettingsButton) resetSettingsButton.disabled = false; // Re-enable reset button
+
+                // Hide generation status and show final elements
+                hideAllGenerationStatus();
+                // Check if an image was actually generated before showing seed
+                if (generatedImage.src && generatedImage.src !== '') { 
+                     generatedImage.style.display = 'block'; // Show generated image
+                     if (finalSeedDisplay) {
+                        finalSeedDisplay.style.display = 'block'; // Show seed
+                     }
+                } else {
+                    resetImageDisplayState(); // If no image came (e.g., error), revert to initial prompt
+                }
+            }
+        };
+
+
+        // --- Collapsible Sections Logic ---
+        const handleCollapsibleClick = (event) => {
+            const header = event.currentTarget;
+            const targetId = header.dataset.target;
+            const content = document.getElementById(targetId);
+            const icon = header.querySelector('.collapse-icon');
+
+            if (content && header && icon) { 
+                if (content.classList.contains('hidden')) {
+                    content.classList.remove('hidden');
+                    header.classList.add('open');
+                    icon.textContent = '▼'; // Change to down arrow
+                    icon.classList.remove('rotate-90');
+                    icon.classList.add('rotate-0');
+                    content.style.maxHeight = content.scrollHeight + "px"; 
+                    content.style.opacity = 1;
+                    setTimeout(() => {
+                        content.style.maxHeight = '';
+                    }, 300);
+                } else {
+                    content.style.maxHeight = content.scrollHeight + "px"; 
+                    content.style.opacity = 0;
+                    setTimeout(() => {
+                        content.classList.add('hidden');
+                        header.classList.remove('open');
+                        icon.textContent = '▶'; // Change to right arrow
+                        icon.classList.remove('rotate-0');
+                        icon.classList.add('rotate-90');
+                        content.style.maxHeight = ''; 
+                    }, 300); 
+                }
+            }
+        };
+
+        // --- Handle Loading Settings from JSON File ---
+        const handleLoadSettingsFromFile = (event) => {
+            console.log('handleLoadSettingsFromFile called.'); // Debug log: Function entered
+            const file = event.target.files[0];
+            if (!file) {
+                displayMessage('No file selected.', 'info');
+                console.log('No file selected in handleLoadSettingsFromFile.'); // Debug log: No file
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                console.log('FileReader onload triggered.'); // Debug log: FileReader loaded
+                try {
+                    const jsonContent = JSON.parse(e.target.result);
+                    const meta = jsonContent.meta;
+                    const outImageBase64 = jsonContent.out; // This is the generated image 
+
+                    // --- DEBUG LOGGING ---
+                    console.log('JSON file loaded. (Before meta check)'); 
+                    if (meta) {
+                        console.log('Meta content:', meta); 
+                    } else {
+                        console.log('"meta" object not found in JSON.'); 
+                    }
+                    // --- END DEBUG LOGGING ---
+
+
+                    if (!meta) {
+                        displayMessage('Invalid JSON format: "meta" object not found.', 'error');
+                        return;
+                    }
+
+                    // STRICT LOADING: Check type and assign, or clear and show error
+                    if (typeof meta.prompt === 'string') {
+                        promptInput.value = meta.prompt;
+                    } else {
+                        promptInput.value = '';
+                        displayMessage('Loading error: "prompt" field must be a string.', 'error', 5000);
+                        console.error('Invalid prompt type:', meta.prompt);
+                    }
+                    
+                    if (typeof meta.neg === 'string') {
+                        negativePromptInput.value = meta.neg;
+                    } else {
+                        negativePromptInput.value = '';
+                        displayMessage('Loading error: "negativePrompt" field must be a string.', 'error', 5000);
+                        console.error('Invalid negativePrompt type:', meta.neg);
+                    }
+
+                    widthInput.value = meta.width !== undefined ? meta.width : '512';
+                    heightInput.value = meta.height !== undefined ? meta.height : '512';
+                    numStepsInput.value = meta.num_steps !== undefined ? meta.num_steps : '25';
+                    guidanceInput.value = meta.guidance !== undefined ? meta.guidance : '7.0';
+                    samplerInput.value = meta.sampler || 'dpm++ 2m';
+                    seedInput.value = meta.seed !== undefined ? meta.seed : ''; // Keep as string for number input
+                    streamInput.value = meta.stream !== undefined ? meta.stream : '0';
+                    strengthInput.value = meta.strength !== undefined ? meta.strength : '0.8';
+                    
+                    // Handle model path
+                    currentModelServerPath = meta.model || '';
+                    updateModelPathDisplay(currentModelServerPath);
+
+                    // Handle input image (img2img)
+                    if (meta.img) {
+                        const inputImageUrl = IMAGE_DATA_PREFIX + meta.img;
+                        imagePreview.src = inputImageUrl;
+                        base64ImageInput.value = inputImageUrl; // Store full data URI
+                        imagePreviewContainer.classList.remove('hidden');
+                    } else {
+                        imagePreview.src = '';
+                        base64ImageInput.value = '';
+                        imagePreviewContainer.classList.add('hidden');
+                    }
+
+                    // Handle generated output image (out)
+                    if (outImageBase64) {
+                        const generatedImageUrl = IMAGE_DATA_PREFIX + outImageBase64;
+                        generatedImage.src = generatedImageUrl;
+                        generatedImage.style.display = 'block'; // Ensure image is visible
+                        placeholderTextOverlay.style.display = 'none'; // Hide placeholder
+                        placeholderTextOverlay.classList.remove('fade-animation'); // Remove animation
+                        // Set final seed display if available in meta or from output JSON
+                        if (meta.seed && finalSeedDisplay) {
+                            finalSeedDisplay.querySelector('span').textContent = meta.seed;
+                            finalSeedDisplay.style.display = 'block';
+                        } else if (jsonContent.seed && finalSeedDisplay) { // Fallback if seed is in root (less likely with meta)
+                            finalSeedDisplay.querySelector('span').textContent = jsonContent.seed;
+                            finalSeedDisplay.style.display = 'block';
+                        }
+                    } else {
+                        resetImageDisplayState(); // Clear generated image and seed if no 'out'
+                    }
+
+                    displayMessage('Settings loaded successfully.', 'success');
+                    saveSettings(); // Save loaded settings to local storage
+                    // Re-calculate image frame dimensions based on loaded width/height
+                    const width = parseInt(widthInput.value) || 512;
+                    const height = parseInt(heightInput.value) || 512;
+                    imageFrame.style.setProperty('--image-aspect-ratio', `${width}/${height}`);
+
+                } catch (error) {
+                    console.error('Error loading or parsing JSON file:', error);
+                    displayMessage(`Error loading settings: ${error.message}`, 'error');
+                } finally {
+                    // Reset file input to allow selecting the same file again if needed
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file);
+        };
+
+        // --- Handle Saving Settings to JSON File ---
+        const handleSaveSettingsToFile = () => {
+            try {
+                const outputJson = {
+                    meta: {
+                        model: currentModelServerPath || null,
+                        // Save prompt and neg directly as strings
+                        prompt: promptInput.value.trim() || '', 
+                        width: parseInt(widthInput.value) || 512,
+                        height: parseInt(heightInput.value) || 512,
+                        num_steps: parseInt(numStepsInput.value) || 25,
+                        guidance: parseFloat(guidanceInput.value) || 7.0,
+                        sampler: samplerInput.value || 'dpm++ 2m',
+                        seed: seedInput.value ? String(seedInput.value) : null, // Ensure seed is saved as string if present
+                        neg: negativePromptInput.value.trim() || null, 
+                        stream: parseInt(streamInput.value) || null,
+                        img: base64ImageInput.value ? base64ImageInput.value.substring(IMAGE_DATA_PREFIX.length) : null, // Remove prefix
+                        strength: parseFloat(strengthInput.value) || 0.8
+                    },
+                    out: generatedImage.src && generatedImage.src.startsWith(IMAGE_DATA_PREFIX) ?
+                        generatedImage.src.substring(IMAGE_DATA_PREFIX.length) : null // Remove prefix
+                };
+
+                // Remove null/undefined/empty string fields from meta after potential array conversion
+                Object.keys(outputJson.meta).forEach(key => {
+                    const value = outputJson.meta[key];
+                    if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '') || (Array.isArray(value) && value.length === 0)) {
+                        delete outputJson.meta[key];
+                    }
+                });
+
+                const jsonString = JSON.stringify(outputJson, null, 2); // Pretty print JSON
+
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                // Format the timestamp as YYYYMMDD_HHMMSS.json
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const day = now.getDate().toString().padStart(2, '0');
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                const seconds = now.getSeconds().toString().padStart(2, '0');
+                const timestamp = `${year}${month}${day}_${hours}${minutes}${seconds}`;
+                
+                // Set the download filename directly to the timestamp format
+                a.download = `${timestamp}.json`; 
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                displayMessage('Settings saved to JSON file', 'success');
+
+            } catch (error) {
+                console.error('Error saving settings to JSON file:', error);
+                displayMessage(`Error saving settings: ${error.message}`, 'error');
+            }
+        };
+
+        // --- Form Submission Handler / Stop Button Handler ---
+        const handleFormSubmit = async (event) => {
+            event.preventDefault();
+
+            if (isGenerating) {
+                if (currentAbortController) {
+                    currentAbortController.abort();
+                    displayMessage('Generation cancelled by user.', 'info');
+                    setGeneratingState(false); 
+                }
+                return; 
+            }
+
+            saveSettings(); 
+            clearMessages(); 
+            setGeneratingState(true); // Start generating state here
+            
+            // Set initial generation state (before image arrives)
+            resetImageDisplayState(); // Clear any previous image
+            showGeneratingStateNoImage(); // Set generating state
+            
+            currentStep = 0; 
+
+            currentAbortController = new AbortController();
+            const signal = currentAbortController.signal;
+
+            const serverUrl = serverAddressInput.value.trim();
+            if (!serverUrl) {
+                displayMessage('Error: Server address cannot be empty.', 'error');
+                setGeneratingState(false);
+                return;
+            }
+
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                displayMessage('Error: Prompt cannot be empty.', 'error');
+                setGeneratingState(false);
+                return;
+            }
+
+            const payload = {
+                prompt: prompt,
+                model: currentModelServerPath || undefined, 
+                neg: negativePromptInput.value.trim() || undefined,
+                width: parseInt(widthInput.value) || 512,
+                height: parseInt(heightInput.value) || 512,
+                num_steps: parseInt(numStepsInput.value) || 25,
+                guidance: parseFloat(guidanceInput.value) || 7.0,
+                sampler: samplerInput.value || 'dpm++ 2m',
+                // Updated: Convert seed to string if it exists, as per the user's updated understanding
+                seed: seedInput.value ? String(seedInput.value) : undefined, 
+                stream: parseInt(streamInput.value) || undefined
+            };
+
+            // Add logging for sent dimensions
+            console.log(`[UI DEBUG] Sending to server: width=${payload.width}, height=${payload.height}`);
+
+
+            if (base64ImageInput.value) {
+                // Remove the 'data:image/png;base64,' prefix from the Base64 string
+                let cleanBase64 = base64ImageInput.value;
+                if (cleanBase64.startsWith(IMAGE_DATA_PREFIX)) {
+                    cleanBase64 = cleanBase64.substring(IMAGE_DATA_PREFIX.length);
+                }
+                payload.img = cleanBase64;
+                payload.strength = parseFloat(strengthInput.value) || 0.8;
+            }
+
+            Object.keys(payload).forEach(key => {
+                if (payload[key] === undefined) {
+                    delete payload[key];
+                }
+            });
+
+            try {
+                const response = await fetch(`${serverUrl}/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload),
+                    signal: signal 
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
+                    throw new Error(`HTTP Error: ${response.status} - ${errorData.message || response.statusText}`);
+                }
+
+                if (payload.stream && payload.stream > 0) {
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder('utf-8');
+                    let buffer = '';
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop();
+
+                        for (const line of lines) {
+                            if (line.trim()) {
+                                try {
+                                    let jsonString = line.trim();
+                                    if (jsonString.startsWith('data: ')) {
+                                        jsonString = jsonString.substring(6);
+                                    }
+                                    const data = JSON.parse(jsonString);
+
+                                    if (data.img) {
+                                        currentStep++; 
+                                        const imageUrl = IMAGE_DATA_PREFIX + data.img;
+                                        generatedImage.src = imageUrl; 
+                                        showGeneratingStateWithImage(); 
+                                        const totalSteps = parseInt(numStepsInput.value) || 0;
+                                        displayMessage(`Generating image (step ${currentStep}/${totalSteps})...`, 'info', 1500); 
+
+                                        // Add logging for dimensions after image load
+                                        generatedImage.onload = () => {
+                                            console.log(`[UI DEBUG] Streamed image dimensions: ${generatedImage.naturalWidth}x${generatedImage.naturalHeight}`);
+                                        };
+                                        generatedImage.onerror = () => {
+                                            console.error(`[UI DEBUG] Error loading streamed image.`);
+                                        };
+
+                                    }
+                                    if (data.seed && finalSeedDisplay) { // Check finalSeedDisplay
+                                        finalSeedDisplay.querySelector('span').textContent = data.seed;
+                                    }
+                                } catch (parseError) {
+                                    console.warn('Error parsing JSON from stream:', parseError, 'Line:', line);
+                                }
+                            }
+                        }
+                    }
+
+                    if (buffer.trim()) {
+                         try {
+                            let jsonString = buffer.trim();
+                            if (jsonString.startsWith('data: ')) {
+                                jsonString = jsonString.substring(6);
+                            }
+                            const data = JSON.parse(jsonString);
+
+                            if (data.img) {
+                                const imageUrl = IMAGE_DATA_PREFIX + data.img;
+                                generatedImage.src = imageUrl;
+                                // Add logging for dimensions after loading the last image in the stream
+                                generatedImage.onload = () => {
+                                    console.log(`[UI DEBUG] Final streamed image dimensions: ${generatedImage.naturalWidth}x${generatedImage.naturalHeight}`);
+                                };
+                                generatedImage.onerror = () => {
+                                    console.error(`[UI DEBUG] Error loading final streamed image.`);
+                                };
+                            }
+                            if (data.seed && finalSeedDisplay) { // Check finalSeedDisplay
+                                finalSeedDisplay.querySelector('span').textContent = data.seed;
+                            }
+                        } catch (parseError) {
+                            console.warn('Error parsing remaining JSON buffer:', parseError, 'Buffer:', buffer);
+                        }
+                    }
+
+                    displayMessage('Generation complete. Image displayed.', 'success');
+
+                } else { 
+                    const result = await response.json();
+                    if (result.img) {
+                        const imageUrl = IMAGE_DATA_PREFIX + result.img;
+                        generatedImage.src = imageUrl;
+                        showGeneratingStateWithImage(); 
+                        displayMessage('Image generated successfully!', 'success');
+                        
+                        // Add logging for dimensions after image load (non-streaming mode)
+                        generatedImage.onload = () => {
+                            console.log(`[UI DEBUG] Received image dimensions: ${generatedImage.naturalWidth}x${generatedImage.naturalHeight}`);
+                        };
+                        generatedImage.onerror = () => {
+                            console.error(`[UI DEBUG] Error loading image.`);
+                        };
+
+                    } else {
+                        displayMessage('Server returned empty or invalid response.', 'error');
+                    }
+                    if (result.seed && finalSeedDisplay) { // Check finalSeedDisplay
+                        finalSeedDisplay.querySelector('span').textContent = result.seed;
+                    }
+                }
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    displayMessage('Generation cancelled by user.', 'info');
+                } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                    console.error('Image generation error: Failed to connect to server.', error);
+                    displayMessage('Generation error: Failed to connect to Imagine server. Check server address and ensure it is running and accessible. CORS might need configuration.', 'error', 7000);
+                }
+                else {
+                    console.error('Image generation error:', error);
+                    displayMessage(`Generation error: ${error.message}`, 'error');
+                }
+            } finally {
+                setGeneratingState(false); 
+                currentAbortController = null; 
+            }
+        };
+
+        // Load settings and initialize elements on page load
+        document.addEventListener('DOMContentLoaded', () => { // Changed from window.onload
+            initializeDOMElements(); 
+            loadSettings(); 
+        });
+    </script>
+</body>
+</html>

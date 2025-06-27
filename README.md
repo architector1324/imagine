@@ -64,7 +64,7 @@ This enables integration from **anywhere**: command-line scripts, Python applica
     *   `num_steps` (int, optional): Number of inference steps. Default: `25`.
     *   `guidance` (float, optional): Classifier-free guidance scale. Default: `7.0`.
     *   `sampler` (string, optional): Sampler algorithm. Available: `'ddim'`, `'euler'`, `'euler a'`, `'heun'`, `'lms'`, `'dpm++ 2m'`, `'dpm++ 2s'`, `'dpm++ sde'`, `'dpm2'`, `'dpm2 a'`. Default: `'dpm++ 2m'`.
-    *   `seed` (int, optional): Random seed for reproducibility. Default: a random integer.
+    *   `seed` (int, optional): Random seed for reproducibility. Default: a random integer represented as string.
     *   `neg` (string, optional): Negative prompt. Default: `''` (empty string).
     *   `img` (string, optional): Base64-encoded input image (data URI format, e.g., `data:image/png;base64,...`). If provided, enables `img2img` mode. Default: `None`.
     *   `strength` (float, optional): Denoising strength for `img2img` mode (0.0 to 1.0). Controls how much the image is changed. Default: `0.8`.
@@ -125,13 +125,13 @@ This enables integration from **anywhere**: command-line scripts, Python applica
     # To process this, you might use tools like `jq -nc --stream 'fromjson'` or handle it in your code.
     ```
 
-### Imagine CLI
+## Imagine CLI
 
-**Note:** This `imagine-cli.py` script is a separate local image generation utility, distinct from the `imagine.py` server.
+**Note:** This `imagine-cli.py` script is a separate utility for image generation, which can interact with the `imagine.py` server.
 
 ### Description
 
-A simple command-line script for generating images based on a text prompt using the `diffusers` library.
+A simple yet powerful command-line script for generating images based on a text prompt using the `diffusers` library. It provides an extended output format for full reproducibility and seamless integration with the Imagine Web UI.
 
 ### Usage
 
@@ -145,7 +145,7 @@ positional arguments:
 
 options:
   -m, --model MODEL     SD model
-  -o, --output OUTPUT   Output image
+  -o, --output OUTPUT   Filename to save the image and accompanying JSON (default is timestamp-based, e.g., `20231027_153045.png` and `20231027_153045.json`).
   -w, --width WIDTH     Output image width
   -h, --height HEIGHT   Output image height
   -n, --num_steps NUM_STEPS
@@ -168,12 +168,86 @@ options:
 #### Example Usage
 
 ```bash
-./imagine-cli.py 'a photo of an astronaut riding a horse on mars, epic, cinematic, detailed' -w 768 -h 512 -n 25 -g 7.0 -s 'dpm++ 2m' --neg 'ugly, deformed, blurry, low quality'
+./imagine-cli.py 'a photo of an astronaut riding a horse on mars, epic, cinematic, detailed' -w 768 -h 512 -n 25 -g 7.0 --sampler 'dpm++ 2m' --neg 'ugly, deformed, blurry, low quality'
 ```
 
-### Output
+### Output Format and Reproducibility
 
-The script will save the generated image to the current directory with a filename based on the prompt or a timestamp.
+The `imagine-cli.py` script defaults to generating a JSON file alongside the generated image. This JSON file contains all the parameters used for the generation (`meta` field) and the generated image itself in base64 format (`out` field).
+
+This standardized output ensures full reproducibility and seamless integration.
+
+**JSON Output Structure:**
+
+```json
+{
+    "meta": {
+        "model": "/home/arch/AI/models/sd/dreamshaper_8.safetensors",
+        "prompt": "a photo of an astronaut riding a horse on mars, epic, cinematic, detailed",
+        "width": 768,
+        "height": 512,
+        "num_steps": 25,
+        "guidance": 7.0,
+        "sampler": "dpm++ 2m",
+        "seed": "591445185899376350",
+        "neg": "ugly, deformed, blurry, low quality",
+        "stream": 1,
+        "img": null,
+        "strength": 0.8
+    },
+    "out": "<base64 encoded image string>"
+}
+```
+
+*   `meta`: Contains all the parameters (prompt, model, dimensions, steps, etc.) that were sent to the Imagine server for this specific generation. This provides full traceability of how the image was created.
+*   `out`: The base64 string of the generated image.
+
+**Reproducibility with the Web UI:**
+
+**Key Point:** This generated JSON file (e.g., `20231027_153045.json` if saved by timestamp) can be directly loaded into the [Imagine Web UI](#imagine-web-ui) using the "Load Settings from JSON" button. This allows you to instantly restore all parameters used for a specific generation and view the result, making the process of reproducing, adjusting, and sharing your creations incredibly simple.
+
+### Output Files
+
+By default, the script will save two files to the current directory:
+*   A `.png` image file with a name based on the prompt or a timestamp (e.g., `my_prompt_12345.png` or `20231027_153045.png`).
+*   A `.json` file with the same base name, containing the full generation metadata and the base64 image (e.g., `my_prompt_12345.json` or `20231027_153045.json`).
+
+You can control the output image filename using the `-o` or `--output` flag. If a filename is specified, both the `.png` and `.json` will use that base name.
+
+## Imagine Web UI
+
+![](./ui/demo.png)
+
+In addition to the command-line interface, **Imagine** also comes with a simple yet powerful web UI located in `ui/imagine-ui.html`. This UI provides a convenient way to interact with the running Imagine server, allowing you to easily configure all generation parameters and visualize results directly in your browser without using `curl` or writing custom scripts.
+
+It is ideal for quick experimentation, testing parameters, or demonstrating the server's capabilities.
+
+### Key UI Features
+
+*   **Intuitive Interface:** All server parameters (`prompt`, `negative prompt`, `width`, `height`, `num_steps`, `guidance scale`, `sampler`, `seed`, `strength`, `stream`) are exposed through user-friendly input fields.
+*   **Image-to-Image Support:** Easily upload an input image for `img2img` operations with live preview.
+*   **Real-time Progress Visualization:** When `stream` is enabled, observe the image generation progress in real-time as intermediate steps are displayed.
+*   **Manage Settings:** Load and save your entire generation configuration (including prompts, parameters, and even the last generated image) to/from JSON files, making it easy to share or reuse specific settings. **This includes the ability to load JSON files generated by the `imagine-cli.py` utility for full reproducibility of previous generations and automatic population of all applied parameters.**
+*   **Real-time Feedback:** Get instant messages about generation status, errors, and cancellations.
+
+### Usage
+
+**Prerequisite:** Ensure your `imagine.py` server is running (see [Run the server](#run-the-server) section).
+
+1.  **Open in Browser:** Navigate to the `ui/` directory and open the `imagine-ui.html` file in your favorite web browser.
+    ```
+    file:///path/to/your/imagine/ui/imagine-ui.html
+    ```
+    (Replace `/path/to/your/imagine` with the actual location of your cloned repository).
+
+2.  **Configure Server Address:** In the "Server & Model" section, verify or set the "Imagine Server Address" (defaults to `http://localhost:5000`).
+
+3.  **Configure Parameters & Generate:** Fill in your desired prompts and adjust other parameters. Click the "Generate" button. *Alternatively, to load previously generated settings, use the "Load Settings from JSON" button in the "Configuration" section and select a JSON file created by the `imagine-cli.py` utility.*
+
+4.  **View Results:** The generated image (or intermediate steps if streaming is enabled) will appear in the main content area. The final seed will also be displayed.
+
+> **Note on CORS:** If you encounter connectivity issues (e.g., "Failed to fetch" errors), this might be due to Cross-Origin Resource Sharing (CORS) policies. Ensure your browser allows local file access to external resources, or consider running a simple local web server to serve the `ui/` directory (e.g., `python3 -m http.server 8000` from your `imagine` project root, then navigate to `http://localhost:8000/ui/imagine-ui.html`).
+
 
 ## Advanced Deployment: Running as a Systemd Service
 
