@@ -76,7 +76,7 @@ It is ideal for quick experimentation, testing parameters, or demonstrating the 
     ```
 
 3.  **Model Management:**
-    Imagine expects your Stable Diffusion model files (`.safetensors` or `.ckpt`) to be placed in a designated directory.
+    Imagine expects your Stable Diffusion model files (`.safetensors`) to be placed in a designated directory.
 
     *   **Default Model Path:** By default, the server will look for models in `~/.imagine/models`.
         You can change this path when running the server using the `--models` argument (e.g., `--models /path/to/your/custom_models`).
@@ -110,7 +110,7 @@ It is ideal for quick experimentation, testing parameters, or demonstrating the 
     ```
 
     **Key Client Options:**
-    *   `-m, --model MODEL`: The **name** of the SD model to use (e.g., `dreamshaper_8`). Default: `dreamshaper_8`.
+    *   `-m, --model MODEL`: The **name** of the SD model to use (e.g., `dreamshaper_8`).
     *   `-a, --address ADDRESS`: The address of the running Imagine server (e.g., `127.0.0.1:5000`). Default: `0.0.0.0:5000`.
     *   `-o, --output OUTPUT`: Filename to save the image and accompanying JSON (default is timestamp-based).
     *   `-w, --width WIDTH`: Output image width.
@@ -151,7 +151,7 @@ It is ideal for quick experimentation, testing parameters, or demonstrating the 
 
     **Available parameters in the JSON payload:**
     *   `prompt` (string, **required**): The text prompt for image generation.
-    *   `model` (string, optional): The **name** of the Stable Diffusion model to use (e.g., `dreamshaper_8`). This name should correspond to a `.safetensors` or `.ckpt` file (without the extension) in the server's configured models directory. Defaults to `dreamshaper_8`.
+    *   `model` (string, **required**): The **name** of the Stable Diffusion model to use (e.g., `dreamshaper_8`). This name should correspond to a `.safetensors` (without the extension) in the server's configured models directory.
     *   `width` (int, optional): Output image width in pixels. Default: `512`.
     *   `height` (int, optional): Output image height in pixels. Default: `512`.
     *   `num_steps` (int, optional): Number of inference steps. Default: `25`.

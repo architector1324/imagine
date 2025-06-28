@@ -102,10 +102,14 @@ def generate_image_logic(data):
     if not prompt:
         raise ValueError("Prompt is required")
 
-    # get parameters
+    # get model
     model_name = data.get('model', None)
+    if not model_name:
+        raise ValueError('Models is required')
+
     model_path = os.path.join(os.path.expanduser(models_path), f'{model_name}.safetensors')
 
+    # get parameters
     width = data.get('width', 512)
     height = data.get('height', 512)
     num_steps = data.get('num_steps', 25)
@@ -343,11 +347,11 @@ class SDRequestHandler(BaseHTTPRequestHandler):
                     response_generator.close()
             except json.JSONDecodeError:
                 self.send_error(400, "Invalid JSON in request body",
-                                json.dumps({"error": "Invalid JSON"}).encode('utf-8'))
+                                json.dumps({"error": "Invalid JSON"}))
             except ValueError as e:
                 # Catch validation errors from generate_image_logic
                 self.send_error(400, str(e),
-                                json.dumps({"error": str(e)}).encode('utf-8'))
+                                json.dumps({"error": str(e)}))
             except Exception as e:
                 # Catch any other unexpected errors during generation or processing
                 print(f"Server error during generation: {e}")
@@ -355,7 +359,7 @@ class SDRequestHandler(BaseHTTPRequestHandler):
                 if response_generator is not None:
                     response_generator.close() # Best effort cleanup
                 self.send_error(500, "Internal Server Error",
-                                json.dumps({"error": "Internal server error during image generation", "details": str(e)}).encode('utf-8'))
+                                json.dumps({"error": "Internal server error during image generation", "details": str(e)}))
         else:
             self.send_error(404, "Not Found")
 

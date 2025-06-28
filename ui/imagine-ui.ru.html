@@ -17,7 +17,7 @@
             --primary-text: #d4d4d4;
             --input-text: #dcdcdc;
             --placeholder-text: #808080;
-            --status-fading-text: #6a9955; /* For "Генерация изображения..." */
+            --status-fading-text: #6a9955; /* For "Generating image..." */
 
             --primary-border: #3c3c3c;
             --input-border: #3c3c3c;
@@ -193,7 +193,7 @@
             box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
         }
 
-        /* Green button style for "Выбрать модель" и "Подтвердить" in modal */
+        /* Green button style for "Select Model" and "Confirm" in modal */
         .btn-green {
             background: linear-gradient(90deg, var(--green-btn-start), var(--green-btn-end));
             color: white;
@@ -316,8 +316,8 @@
             box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
         }
 
-        /* === UPDATED STYLING FOR GRAY BUTTONS (VS CODE STYLE) === */
-        .modal .btn-modal-secondary { /* 'Отмена' and 'Сохранить настройки в JSON' */
+        /* === UPDATED STYLING FOR GRAY BUTTONS (VS Code STYLE) === */
+        .modal .btn-modal-secondary { /* 'Cancel' and 'Save Settings to JSON' */
             background-color: var(--collapsible-header-bg); /* Solid color from VS Code palette */
             border: 1px solid var(--primary-border); /* Consistent border */
             color: var(--primary-text);
@@ -382,7 +382,7 @@
             color: var(--error-msg-text);
         }
 
-        /* === UPDATED STYLING FOR GRAY BUTTONS (VS CODE STYLE) === */
+        /* === UPDATED STYLING FOR GRAY BUTTONS (VS Code STYLE) === */
         /* Style for the file input label to make it look like a button */
         .file-input-button {
             display: inline-block;
@@ -497,7 +497,7 @@
 
             <div class="sidebar">
                 <div class="grid grid-cols-1 gap-y-4">
-                    <!-- START: Конфигурация - Теперь первый блок и свернут по умолчанию -->
+                    <!-- START: Configuration - Now the first block and collapsed by default -->
                     <div class="collapsible-container">
                         <div class="collapsible-header" data-target="jsonSettings">
                             <h2 class="text-lg font-semibold text-gray-300">Конфигурация</h2>
@@ -518,12 +518,12 @@
                             </div>
                         </div>
                     </div>
-                    <!-- END: Конфигурация -->
+                    <!-- END: Configuration -->
 
-                    <!-- START: Сервер и Модель - Теперь второй блок и развернут по умолчанию -->
+                    <!-- START: Server & Model - Now the second block and expanded by default -->
                     <div class="collapsible-container">
                         <div class="collapsible-header" data-target="serverModelSettings">
-                            <h2 class="text-lg font-semibold text-gray-300">Сервер и Модель</h2>
+                            <h2 class="text-lg font-semibold text-gray-300">Сервер и модель</h2>
                             <span class="collapse-icon">▶</span> <!-- Right arrow -->
                         </div>
                         <div id="serverModelSettings" class="collapsible-content">
@@ -535,27 +535,34 @@
                                     type="text"
                                     id="serverAddress"
                                     value="http://localhost:5000"
-                                    placeholder="Например: http://localhost:5000"
+                                    placeholder="напр.: http://localhost:5000"
                                     class="w-full form-input-dark"
                                 />
                                 <p class="text-xs text-gray-500 mt-2">
-                                    Убедитесь, что ваш сервер Imagine запущен и доступен.
+                                    Убедитесь, что ваш Imagine сервер запущен и доступен.
+                                </p>
+                            </div>
+                            <div class="mb-4"> <!-- Div for model selection and status -->
+                                <label for="modelSelect" class="block text-gray-400 text-sm font-medium mb-2">
+                                    Выберите модель <span class="text-red-500">*</span>:
+                                </label>
+                                <select id="modelSelect" class="w-full form-input-dark">
+                                    <!-- Options will be populated by JavaScript -->
+                                </select>
+                                <p id="modelStatus" class="text-xs text-gray-500 mt-2 text-center break-all">
+                                    Модели не загружены. Введите адрес сервера и нажмите 'Загрузить модели'.
                                 </p>
                             </div>
                             <div class="flex flex-col items-center">
-                                <button type="button" id="openModelButton" class="btn-green w-full max-w-xs px-6 py-3 text-sm">
-                                    Выбрать модель
+                                <button type="button" id="fetchModelsButton" class="btn-green w-full max-w-xs px-6 py-3 text-sm mt-2">
+                                    Загрузить модели
                                 </button>
-                                <p id="currentModelPathDisplay" class="text-xs text-gray-500 mt-2 text-center break-all">
-                                    Текущая модель: <span class="font-mono" style="color: var(--input-text);">по умолчанию</span>
-                                </p>
-                                <input type="file" id="hiddenModelFileInput" accept=".safetensors,.ckpt" class="hidden">
                             </div>
                         </div>
                     </div>
-                    <!-- END: Сервер и Модель -->
+                    <!-- END: Server & Model -->
 
-                    <!-- START: Параметры генерации - Остается на своем месте -->
+                    <!-- START: Generation Parameters - Stays in its place -->
                     <div class="collapsible-container">
                         <div class="collapsible-header" data-target="genParams">
                             <h2 class="text-lg font-semibold text-gray-300">Параметры генерации</h2>
@@ -604,7 +611,7 @@
                                 </div>
                                 <div>
                                     <label for="guidance" class="block text-gray-400 text-sm font-medium mb-2">
-                                        Масштаб руководства (Guidance):
+                                        Шкала CFG:
                                     </label>
                                     <input
                                         type="number"
@@ -639,7 +646,7 @@
                                 </div>
                                 <div>
                                     <label for="seed" class="block text-gray-400 text-sm font-medium mb-2">
-                                        Сид (Seed, оставить пустым для случайного):
+                                        Сид (оставьте пустым для случайного):
                                     </label>
                                     <input
                                         type="number"
@@ -651,7 +658,7 @@
 
                             <div>
                                 <label for="stream" class="block text-gray-400 text-sm font-medium mb-2">
-                                    Потоковая передача шагов (Stream, 0 для выключения):
+                                    Шаги потока (0 для отключения):
                                 </label>
                                 <input
                                     type="number"
@@ -666,9 +673,9 @@
                             </div>
                         </div>
                     </div>
-                    <!-- END: Параметры генерации -->
+                    <!-- END: Generation Parameters -->
 
-                    <!-- START: Входное изображение - Остается на своем месте -->
+                    <!-- START: Input Image - Stays in its place -->
                     <div class="collapsible-container">
                         <div class="collapsible-header" data-target="img2imgSettings">
                             <h2 class="text-lg font-semibold text-gray-300">Входное изображение</h2>
@@ -679,9 +686,9 @@
                                 <label for="imgUpload" class="block text-gray-400 text-sm font-medium mb-2">
                                     Загрузить изображение:
                                 </label>
-                                <!-- Добавлен id="fileInputButton" для более точного выбора в JS -->
+                                <!-- Added id="fileInputButton" for more precise selection in JS -->
                                 <label for="imgUpload" id="fileInputButton" class="file-input-button">
-                                    Выберите файл
+                                    Выбрать файл
                                 </label>
                                 <input
                                     type="file"
@@ -692,7 +699,7 @@
                                     Выберите изображение для режима Image2Image.
                                 </p>
                                 <div id="imagePreviewContainer" class="mt-4 hidden">
-                                    <p class="text-gray-400 text-sm font-medium mb-2">Предварительный просмотр:</p>
+                                    <p class="text-gray-400 text-sm font-medium mb-2">Предпросмотр:</p>
                                     <img id="imagePreview" class="max-w-full h-auto rounded-md border border-gray-600 object-contain" />
                                 </div>
                                 <input type="hidden" id="base64Image" />
@@ -700,7 +707,7 @@
 
                             <div>
                                 <label for="strength" class="block text-gray-400 text-sm font-medium mb-2">
-                                    Сила денойзинга (Strength, для Image2Image):
+                                    Сила денойзинга (для Image2Image):
                                 </label>
                                 <input
                                     type="number"
@@ -714,7 +721,7 @@
                             </div>
                         </div>
                     </div>
-                    <!-- END: Входное изображение -->
+                    <!-- END: Input Image -->
                 </div>
             </div>
 
@@ -733,15 +740,15 @@
                 <div id="imageFrame" class="relative flex flex-col items-center justify-content" style="border: 1px solid var(--primary-border); background-color: var(--image-frame-bg);">
                     <!-- This overlay is shown when no image is present (initial or generating with no image yet) -->
                     <div id="placeholderTextOverlay" class="absolute inset-0 flex items-center justify-center text-xl font-bold transition-opacity duration-300 ease-in-out" style="color: var(--placeholder-text);">
-                        Нажмите 'Генерировать'
+                        Нажмите 'Сгенерировать'
                     </div>
                     <!-- Removed src and hidden class, visibility controlled by JS -->
-                    <img id="generatedImage" class="max-w-full max-h-full w-full h-full object-contain relative z-5" alt="Сгенерированное изображение" />
+                    <img id="generatedImage" class="max-w-full max-h-full w-full h-full object-contain relative z-5" alt="Generated image" />
                 </div>
                 <!-- Moved outside imageFrame, hidden class removed, now managed by JS -->
                 <p id="finalSeed" class="text-sm mt-4" style="color: var(--primary-text);">Сид: <span class="font-mono" style="color: var(--input-text);"></span></p>
                 
-                <!-- START: Промпты - Перемещенный блок под изображение, теперь сворачиваемый -->
+                <!-- START: Prompts - Moved block below the image, now collapsible -->
                 <div class="collapsible-container w-full mt-8">
                     <div class="collapsible-header" data-target="promptSettings">
                         <h2 class="text-lg font-semibold text-gray-300">Промпты</h2>
@@ -756,7 +763,7 @@
                                 id="prompt"
                                 rows="4"
                                 class="w-full form-input-dark"
-                                placeholder="Например: a photo of an astronaut riding a horse on mars, epic, cinematic, detailed"
+                                placeholder="напр.: фотография астронавта, скачущего на лошади по Марсу, эпично, кинематографично, детализированно"
                                 required
                             ></textarea>
                         </div>
@@ -768,53 +775,27 @@
                                 id="negativePrompt"
                                 rows="3"
                                 class="w-full form-input-dark"
-                                placeholder="Например: ugly, deformed, blurry, low quality"
+                                placeholder="напр.: уродливый, деформированный, размытый, низкое качество"
                             ></textarea>
                         </div>
                     </div>
                 </div>
-                <!-- END: Промпты -->
+                <!-- END: Prompts -->
 
-                <!-- START: Кнопка Генерировать - Вынесена под блок Промпты -->
+                <!-- START: Generate Button - Moved below the Prompts block -->
                 <div class="col-span-full text-center mt-4">
                     <button
                         type="submit"
                         id="generateButton"
                         class="btn-primary"
                     >
-                        Генерировать
+                        Сгенерировать
                     </button>
                 </div>
-                <!-- END: Кнопка Генерировать -->
+                <!-- END: Generate Button -->
             </div>
         </div>
     </form>
-
-    <!-- Modal for model path selection -->
-    <div id="modelPathModal" class="fixed inset-0 modal flex items-center justify-center z-50 p-4">
-        <div class="modal-content p-6 w-full max-w-md">
-            <h3 class="text-xl font-semibold text-white mb-4">Укажите путь к файлу модели на сервере</h3>
-            <input
-                type="text"
-                id="modalModelPathInput"
-                placeholder="Например: /home/user/models/my_model.safetensors"
-                class="w-full form-input-dark mb-4"
-            />
-            <p class="text-sm text-gray-400 mb-6">
-                Введите **полный путь к файлу модели на вашем сервере Imagine**.
-                Это не путь к локальному файлу на вашем компьютере.
-                Оставьте пустым, чтобы использовать модель по умолчанию на сервере.
-            </p>
-            <div class="flex justify-end space-x-4">
-                <button type="button" id="cancelModelPathButton" class="btn-modal-secondary">
-                    Отмена
-                </button>
-                <button type="button" id="confirmModelPathButton" class="btn-green">
-                    Подтвердить
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- Custom Confirmation Modal (for Reset Settings) -->
     <div id="resetConfirmModal" class="fixed inset-0 modal flex items-center justify-center z-50 p-4" style="display: none;">
@@ -826,7 +807,7 @@
                     Отмена
                 </button>
                 <button type="button" id="confirmResetButton" class="btn-stop">
-                    Сбросить
+                    Сброс
                 </button>
             </div>
         </div>
@@ -861,13 +842,10 @@
         let generatedImage; 
         let finalSeedDisplay; 
 
-        // Modals Elements
-        let modelPathModal;
-        let openModelButton;
-        let modalModelPathInput;
-        let cancelModelPathButton;
-        let confirmModelPathButton;
-        let currentModelPathDisplay; 
+        // New elements for model selection
+        let modelSelect;
+        let modelStatusText;
+        let fetchModelsButton; // New element
 
         // New: Reset Confirmation Modal Elements
         let resetConfirmModal;
@@ -883,7 +861,7 @@
         let loadJsonFileInput;
         let saveSettingsButton;
 
-        let currentModelServerPath = ''; 
+        let currentModelServerPath = ''; // This will now store the model name (e.g., 'dreamshaper_8')
         let messageTimeoutId = null; 
         let currentStep = 0; 
 
@@ -916,15 +894,12 @@
             generatedImage = document.getElementById('generatedImage');
             finalSeedDisplay = document.getElementById('finalSeed'); 
 
-            // Modal Elements
-            modelPathModal = document.getElementById('modelPathModal');
-            openModelButton = document.getElementById('openModelButton');
-            modalModelPathInput = document.getElementById('modalModelPathInput');
-            cancelModelPathButton = document.getElementById('cancelModelPathButton');
-            confirmModelPathButton = document.getElementById('confirmModelPathButton');
-            currentModelPathDisplay = document.getElementById('currentModelPathDisplay');
+            // New model selection elements
+            modelSelect = document.getElementById('modelSelect');
+            modelStatusText = document.getElementById('modelStatus');
+            fetchModelsButton = document.getElementById('fetchModelsButton'); // Initialize new button
 
-            // New: Reset Confirmation Modal Elements
+            // Reset Confirmation Modal Elements
             resetConfirmModal = document.getElementById('resetConfirmModal');
             cancelResetButton = document.getElementById('cancelResetButton');
             confirmResetButton = document.getElementById('confirmResetButton');
@@ -947,7 +922,7 @@
 
                 if (content && header && icon) { 
                     const targetId = header.dataset.target;
-                    // 'Сервер и Модель' should be open by default
+                    // 'Server & Model' should be open by default
                     if (targetId === 'serverModelSettings') {
                         content.classList.remove('hidden');
                         header.classList.add('open');
@@ -956,7 +931,7 @@
                         icon.classList.add('rotate-0');
                         content.style.maxHeight = ''; 
                         content.style.opacity = 1;
-                    } else { // All other sections (Конфигурация, Параметры генерации, Входное изображение, Промпты) collapsed by default
+                    } else { // All other sections (Configuration, Generation Parameters, Input Image, Prompts) collapsed by default
                         content.classList.add('hidden');
                         header.classList.remove('open');
                         icon.textContent = '▶'; // Right arrow Unicode
@@ -983,7 +958,6 @@
             }
 
             // Initial display for image placeholder and hiding all other dynamic elements
-            modelPathModal.style.display = 'none';
             floatingMessageContainer.style.display = 'none';
             aboveImageStatusText.style.display = 'none';
             resetConfirmModal.style.display = 'none'; // Ensure reset modal is hidden initially
@@ -1019,25 +993,30 @@
                 header.addEventListener('click', handleCollapsibleClick);
             });
 
-            // Modal Event Listeners
-            if (openModelButton && modalModelPathInput && modelPathModal && cancelModelPathButton && confirmModelPathButton) {
-                openModelButton.addEventListener('click', () => {
-                    modalModelPathInput.value = currentModelServerPath; 
-                    modelPathModal.style.display = 'flex'; // Show modal
-                });
-            
-                cancelModelPathButton.addEventListener('click', () => {
-                    modalModelPathInput.value = ''; // Clear input on cancel
-                    modelPathModal.style.display = 'none'; // Hide modal
-                });
-            
-                confirmModelPathButton.addEventListener('click', () => {
-                    currentModelServerPath = modalModelPathInput.value.trim();
-                    updateModelPathDisplay(currentModelServerPath); 
-                    modelPathModal.style.display = 'none'; // Hide modal
-                    saveSettings(); 
+            // Removed automatic fetch on server address change/blur as per user request
+            // if (serverAddressInput) {
+            //     serverAddressInput.addEventListener('change', fetchAvailableModels);
+            //     serverAddressInput.addEventListener('blur', fetchAvailableModels);
+            // }
+
+            // New: Add listener for the Fetch Models button
+            if (fetchModelsButton) {
+                fetchModelsButton.addEventListener('click', fetchAvailableModels);
+            }
+
+            if (modelSelect) {
+                modelSelect.addEventListener('change', () => {
+                    currentModelServerPath = modelSelect.value;
+                    saveSettings();
+                    updateGenerateButtonState();
                 });
             }
+
+            // Fix for the bug: Add event listener to promptInput
+            if (promptInput) {
+                promptInput.addEventListener('input', updateGenerateButtonState);
+            }
+
 
             // JSON Import/Export Event Listeners
             if (loadSettingsButton && loadJsonFileInput) {
@@ -1064,7 +1043,7 @@
             if (cancelResetButton) {
                 cancelResetButton.addEventListener('click', () => {
                     resetConfirmModal.style.display = 'none'; // Hide modal
-                    displayMessage('Сброс настровек отменен.', 'info'); 
+                    displayMessage('Сброс настроек отменен.', 'info'); 
                 });
             }
             if (confirmResetButton) {
@@ -1073,18 +1052,20 @@
                     localStorage.removeItem('imagineSettings'); // Clear settings from local storage
                     loadSettings(); // Reload default settings to UI
                     resetImageDisplayState(); // Clear generated image display
-                    currentModelServerPath = ''; // Reset model path in memory
-                    updateModelPathDisplay(currentModelServerPath); // Update model path display
-                    updateImageFrameDimensions(); // Call this to reset image frame aspect ratio
                     
                     // Also clear any loaded input image
                     base64ImageInput.value = '';
                     imagePreview.src = '';
                     imagePreviewContainer.classList.add('hidden');
 
-                    displayMessage('Настройки сброшены к значениям по умолчанию.', 'info');
+                    updateImageFrameDimensions();
+
+                    displayMessage('Настройки сброшены до значений по умолчанию.', 'info');
                 });
             }
+
+            // Initial state for generate button based on model selection
+            updateGenerateButtonState();
         };
 
 
@@ -1099,7 +1080,7 @@
         const resetImageDisplayState = () => {
             generatedImage.src = ''; // Explicitly set src to empty string
             generatedImage.style.display = 'none'; // Ensure it's hidden
-            placeholderTextOverlay.textContent = 'Нажмите \'Генерировать\'';
+            placeholderTextOverlay.textContent = 'Нажмите \'Сгенерировать\'';
             placeholderTextOverlay.style.display = 'flex'; // Show placeholder as flex
             placeholderTextOverlay.classList.remove('fade-animation'); // Ensure no fade on initial state
             aboveImageStatusText.style.display = 'none'; // Hide above text
@@ -1142,29 +1123,87 @@
             // Do not hide generatedImage or finalSeed here, let setGeneratingState handle the final state.
         };
 
-        // --- Local Storage Functions ---
-        const updateModelPathDisplay = (fullPath) => {
-            if (currentModelPathDisplay) {
-                let displayFileName = 'по умолчанию';
-                if (fullPath) {
-                    const parts = fullPath.split(/[/\\]/); 
-                    let fileName = parts.pop(); 
-                    if (fileName) {
-                        const dotIndex = fileName.lastIndexOf('.');
-                        if (dotIndex > 0) { 
-                            fileName = fileName.substring(0, dotIndex);
-                        }
-                        displayFileName = fileName;
-                    }
+        // --- Model Selection Functions ---
+        const populateModelSelect = (modelsArray) => {
+            modelSelect.innerHTML = ''; // Clear existing options
+
+            // Add placeholder option
+            const placeholderOption = document.createElement('option');
+            placeholderOption.value = '';
+            placeholderOption.textContent = '--- Выберите модель ---';
+            placeholderOption.disabled = true; // Make it unselectable
+            placeholderOption.selected = true; // Make it default selected
+            modelSelect.appendChild(placeholderOption);
+
+
+            // Add models from the server
+            modelsArray.forEach(modelName => {
+                const option = document.createElement('option');
+                option.value = modelName;
+                option.textContent = modelName;
+                modelSelect.appendChild(option);
+            });
+
+            // Try to select the previously chosen model if it exists in the new list
+            if (currentModelServerPath && modelsArray.includes(currentModelServerPath)) {
+                modelSelect.value = currentModelServerPath;
+            } else if (modelsArray.length > 0) {
+                // If previously selected model is not found, or no model was saved,
+                // select the first actual model in the list if any are available.
+                modelSelect.value = modelsArray[0];
+                currentModelServerPath = modelsArray[0]; // Update the variable too
+            } else {
+                // If no models are available, ensure modelSelect is back to empty/placeholder
+                modelSelect.value = ''; 
+                currentModelServerPath = '';
+            }
+            updateGenerateButtonState(); // Update button state after populating models
+        };
+
+        const fetchAvailableModels = async () => {
+            modelStatusText.textContent = 'Загрузка моделей...';
+            modelSelect.disabled = true; // Disable select during fetch
+            generateButton.disabled = true; // Also disable generate button during fetch
+            fetchModelsButton.disabled = true; // Disable fetch button during fetch
+
+            const serverUrl = serverAddressInput.value.trim();
+            if (!serverUrl) {
+                modelStatusText.textContent = 'Адрес сервера пуст.';
+                populateModelSelect([]); // Clear models
+                updateGenerateButtonState();
+                return;
+            }
+
+            try {
+                const response = await fetch(`${serverUrl}/models`);
+                if (!response.ok) {
+                    throw new Error(`HTTP Ошибка: ${response.status} - ${response.statusText}`);
                 }
-                currentModelPathDisplay.innerHTML = `Текущая модель: <span class="font-mono" style="color: var(--input-text);">${displayFileName}</span>`;
+                const data = await response.json();
+                if (data && Array.isArray(data.models)) {
+                    populateModelSelect(data.models);
+                    modelStatusText.textContent = `Найдено моделей: ${data.models.length}.`;
+                } else {
+                    throw new Error('Неверный формат ответа: массив "models" не найден.');
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке моделей:', error);
+                modelStatusText.textContent = `Ошибка загрузки моделей: ${error.message}`;
+                populateModelSelect([]); // Clear models on error
+            } finally {
+                modelSelect.disabled = false; // Re-enable select
+                fetchModelsButton.disabled = false; // Re-enable fetch button
+                saveSettings(); // Save current model selection (or lack thereof)
+                updateGenerateButtonState(); // Re-evaluate generate button state
             }
         };
 
+
+        // --- Local Storage Functions ---
         const saveSettings = () => {
             const settings = {
                 serverAddress: serverAddressInput.value,
-                modelPath: currentModelServerPath, 
+                model: currentModelServerPath, // Now saving model name
                 prompt: promptInput.value,
                 negativePrompt: negativePromptInput.value,
                 width: widthInput.value,
@@ -1187,15 +1226,15 @@
                 try {
                     settings = JSON.parse(settingsString);
                 } catch (e) {
-                    console.error("Ошибка парсинга настроек из localStorage, используются значения по умолчанию.", e);
+                    console.error("Error parsing settings from localStorage, using default values.", e);
                     // If parsing fails, treat as no settings
                 }
             }
 
             // Set default values for all fields
             serverAddressInput.value = (settings && settings.serverAddress) || 'http://localhost:5000';
-            currentModelServerPath = (settings && settings.modelPath) || '';
-            updateModelPathDisplay(currentModelServerPath);
+            // Set currentModelServerPath from loaded settings
+            currentModelServerPath = (settings && settings.model) || ''; 
             promptInput.value = (settings && settings.prompt) || '';
             negativePromptInput.value = (settings && settings.negativePrompt) || '';
             widthInput.value = (settings && settings.width) || '512';
@@ -1216,9 +1255,9 @@
                 imagePreviewContainer.classList.add('hidden');
             }
 
-            console.log('[DEBUG] Настройки загружены. Текущие значения:', {
+            console.log('[DEBUG] Settings loaded. Current values:', {
                 serverAddress: serverAddressInput.value,
-                modelPath: currentModelServerPath,
+                model: currentModelServerPath, // Debug shows model name
                 prompt: promptInput.value,
                 negativePrompt: negativePromptInput.value,
                 width: widthInput.value,
@@ -1231,6 +1270,9 @@
                 stream: streamInput.value,
                 hasImage: !!base64ImageInput.value
             });
+            
+            // After loading settings, fetch available models to populate the select dropdown (initial load)
+            fetchAvailableModels();
         };
 
         // --- Message Display Function ---
@@ -1266,7 +1308,18 @@
             floatingMessageContainer.classList.remove('info', 'success', 'error'); 
         };
 
-        // --- Button State Management ---
+        // --- Generate Button State Management ---
+        const updateGenerateButtonState = () => {
+            // Button should be disabled if no model is selected or if prompt is empty
+            const isModelSelected = modelSelect && modelSelect.value !== '';
+            const isPromptEmpty = promptInput && promptInput.value.trim() === '';
+            
+            if (generateButton) {
+                generateButton.disabled = !isModelSelected || isPromptEmpty || isGenerating;
+            }
+        };
+
+        // --- Button State Management during Generation ---
         const setGeneratingState = (generating) => {
             isGenerating = generating;
             if (generating) {
@@ -1274,47 +1327,41 @@
                 generateButton.classList.remove('btn-primary');
                 generateButton.classList.add('btn-stop');
                 // Disable all relevant form inputs during generation
-                // Since imagineForm now wraps everything, this correctly disables/enables all inputs
                 Array.from(imagineForm.elements).forEach(element => {
-                    // Make sure 'generateButton' is not disabled if it's the stop button
                     if (element.id !== 'generateButton') { 
                         element.disabled = true;
                     }
                 });
-                // Specifically handle the custom file input button label
                 if (imgUploadButtonLabel) {
                     imgUploadButtonLabel.setAttribute('data-disabled', 'true');
                     imgUploadInput.disabled = true; 
                 }
-                if (openModelButton) {
-                    openModelButton.disabled = true;
-                }
                 if (loadSettingsButton) loadSettingsButton.disabled = true;
                 if (saveSettingsButton) saveSettingsButton.disabled = true;
-                if (resetSettingsButton) resetSettingsButton.disabled = true; // Disable reset button
+                if (resetSettingsButton) resetSettingsButton.disabled = true; 
+                if (modelSelect) modelSelect.disabled = true; // Disable model select
+                if (fetchModelsButton) fetchModelsButton.disabled = true; // Disable fetch button during generation
                 
                 // Update image display state for generation
                 showGeneratingStateNoImage();
 
             } else {
-                generateButton.textContent = 'Генерировать'; 
+                generateButton.textContent = 'Сгенерировать'; 
                 generateButton.classList.remove('btn-stop');
                 generateButton.classList.add('btn-primary');
                 // Re-enable form inputs
                 Array.from(imagineForm.elements).forEach(element => {
                     element.disabled = false;
                 });
-                // Specifically handle the custom file input button label
                 if (imgUploadButtonLabel) {
                     imgUploadButtonLabel.removeAttribute('data-disabled');
                     imgUploadInput.disabled = false; 
                 }
-                if (openModelButton) {
-                    openModelButton.disabled = false;
-                }
                 if (loadSettingsButton) loadSettingsButton.disabled = false;
                 if (saveSettingsButton) saveSettingsButton.disabled = false;
-                if (resetSettingsButton) resetSettingsButton.disabled = false; // Re-enable reset button
+                if (resetSettingsButton) resetSettingsButton.disabled = false; 
+                if (modelSelect) modelSelect.disabled = false; // Re-enable model select
+                if (fetchModelsButton) fetchModelsButton.disabled = false; // Re-enable fetch button
 
                 // Hide generation status and show final elements
                 hideAllGenerationStatus();
@@ -1327,6 +1374,7 @@
                 } else {
                     resetImageDisplayState(); // If no image came (e.g., error), revert to initial prompt
                 }
+                updateGenerateButtonState(); // Re-evaluate generate button state after generation
             }
         };
 
@@ -1370,7 +1418,7 @@
             console.log('handleLoadSettingsFromFile called.'); // Debug log: Function entered
             const file = event.target.files[0];
             if (!file) {
-                displayMessage('No file selected.', 'info');
+                displayMessage('Файл не выбран.', 'info');
                 console.log('No file selected in handleLoadSettingsFromFile.'); // Debug log: No file
                 return;
             }
@@ -1384,17 +1432,17 @@
                     const outImageBase64 = jsonContent.out; // This is the generated image 
 
                     // --- DEBUG LOGGING ---
-                    console.log('Загружен файл JSON. (Before meta check)'); 
+                    console.log('JSON file loaded. (Before meta check)'); 
                     if (meta) {
-                        console.log('Содержимое meta:', meta); 
+                        console.log('Meta content:', meta); 
                     } else {
-                        console.log('Объект "meta" не найден в JSON.'); 
+                        console.log('"meta" object not found in JSON.'); 
                     }
                     // --- END DEBUG LOGGING ---
 
 
                     if (!meta) {
-                        displayMessage('Invalid JSON format: "meta" object not found.', 'error');
+                        displayMessage('Неверный формат JSON: объект "meta" не найден.', 'error');
                         return;
                     }
 
@@ -1424,9 +1472,11 @@
                     streamInput.value = meta.stream !== undefined ? meta.stream : '0';
                     strengthInput.value = meta.strength !== undefined ? meta.strength : '0.8';
                     
-                    // Handle model path
+                    // Handle model name from JSON file (meta.model contains the name, not path)
                     currentModelServerPath = meta.model || '';
-                    updateModelPathDisplay(currentModelServerPath);
+                    if (modelSelect) { // Attempt to set the select value
+                        modelSelect.value = currentModelServerPath;
+                    }
 
                     // Handle input image (img2img)
                     if (meta.img) {
@@ -1459,13 +1509,13 @@
                         resetImageDisplayState(); // Clear generated image and seed if no 'out'
                     }
 
-                    displayMessage('Настройки загружены.', 'success');
+                    displayMessage('Настройки успешно загружены.', 'success');
                     saveSettings(); // Save loaded settings to local storage
                     // Re-calculate image frame dimensions based on loaded width/height
                     const width = parseInt(widthInput.value) || 512;
                     const height = parseInt(heightInput.value) || 512;
                     imageFrame.style.setProperty('--image-aspect-ratio', `${width}/${height}`);
-
+                    updateGenerateButtonState(); // Update button state after loading
                 } catch (error) {
                     console.error('Error loading or parsing JSON file:', error);
                     displayMessage(`Ошибка загрузки настроек: ${error.message}`, 'error');
@@ -1482,7 +1532,7 @@
             try {
                 const outputJson = {
                     meta: {
-                        model: currentModelServerPath || null,
+                        model: currentModelServerPath || null, // Now saving model NAME
                         // Save prompt and neg directly as strings
                         prompt: promptInput.value.trim() || '', 
                         width: parseInt(widthInput.value) || 512,
@@ -1514,7 +1564,7 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                // Format the timestamp as ГГГГММДД_ЧЧММСС.json
+                // Format the timestamp as YYYYMMDD_HHMMSS.json
                 const now = new Date();
                 const year = now.getFullYear();
                 const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -1531,7 +1581,7 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
 
-                displayMessage('Settings saved to JSON file', 'success');
+                displayMessage('Настройки сохранены в JSON-файл.', 'success');
 
             } catch (error) {
                 console.error('Error saving settings to JSON file:', error);
@@ -1554,6 +1604,27 @@
 
             saveSettings(); 
             clearMessages(); 
+            
+            // --- NEW VALIDATION: Check for selected model and prompt ---
+            const serverUrl = serverAddressInput.value.trim();
+            if (!serverUrl) {
+                displayMessage('Ошибка: Адрес сервера не может быть пустым.', 'error');
+                return; // Do not proceed
+            }
+
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                displayMessage('Ошибка: Промпт не может быть пустым.', 'error');
+                return; // Do not proceed
+            }
+
+            if (!currentModelServerPath) { // Check if a model is selected
+                displayMessage('Ошибка: Пожалуйста, выберите модель из списка.', 'error');
+                return; // Do not proceed
+            }
+            // --- END NEW VALIDATION ---
+
+
             setGeneratingState(true); // Start generating state here
             
             // Set initial generation state (before image arrives)
@@ -1565,23 +1636,9 @@
             currentAbortController = new AbortController();
             const signal = currentAbortController.signal;
 
-            const serverUrl = serverAddressInput.value.trim();
-            if (!serverUrl) {
-                displayMessage('Ошибка: Адрес сервера не может быть пустым.', 'error');
-                setGeneratingState(false);
-                return;
-            }
-
-            const prompt = promptInput.value.trim();
-            if (!prompt) {
-                displayMessage('Ошибка: Промпт не может быть пустым.', 'error');
-                setGeneratingState(false);
-                return;
-            }
-
             const payload = {
                 prompt: prompt,
-                model: currentModelServerPath || undefined, 
+                model: currentModelServerPath, // Now `currentModelServerPath` holds the model name, which is guaranteed to be non-empty by validation
                 neg: negativePromptInput.value.trim() || undefined,
                 width: parseInt(widthInput.value) || 512,
                 height: parseInt(heightInput.value) || 512,
@@ -1594,7 +1651,7 @@
             };
 
             // Add logging for sent dimensions
-            console.log(`[UI DEBUG] Отправляем на сервер: width=${payload.width}, height=${payload.height}`);
+            console.log(`[UI DEBUG] Sending to server: width=${payload.width}, height=${payload.height}`);
 
 
             if (base64ImageInput.value) {
@@ -1607,6 +1664,7 @@
                 payload.strength = parseFloat(strengthInput.value) || 0.8;
             }
 
+            // Clean up undefined values from payload for cleaner JSON (though server should handle it)
             Object.keys(payload).forEach(key => {
                 if (payload[key] === undefined) {
                     delete payload[key];
@@ -1624,8 +1682,8 @@
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: 'Неизвестная ошибка сервера' }));
-                    throw new Error(`Ошибка HTTP: ${response.status} - ${errorData.message || response.statusText}`);
+                    const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
+                    throw new Error(`HTTP Ошибка: ${response.status} - ${errorData.message || response.statusText}`);
                 }
 
                 if (payload.stream && payload.stream > 0) {
@@ -1661,10 +1719,10 @@
 
                                         // Add logging for dimensions after image load
                                         generatedImage.onload = () => {
-                                            console.log(`[UI DEBUG] Размеры потокового изображения: ${generatedImage.naturalWidth}x${generatedImage.naturalHeight}`);
+                                            console.log(`[UI DEBUG] Streamed image dimensions: ${generatedImage.naturalWidth}x${generatedImage.naturalHeight}`);
                                         };
                                         generatedImage.onerror = () => {
-                                            console.error(`[UI DEBUG] Ошибка загрузки потокового изображения.`);
+                                            console.error(`[UI DEBUG] Error loading streamed image.`);
                                         };
 
                                     }
@@ -1672,7 +1730,7 @@
                                         finalSeedDisplay.querySelector('span').textContent = data.seed;
                                     }
                                 } catch (parseError) {
-                                    console.warn('Ошибка парсинга JSON из потока:', parseError, 'Line:', line);
+                                    console.warn('Error parsing JSON from stream:', parseError, 'Line:', line);
                                 }
                             }
                         }
@@ -1691,17 +1749,17 @@
                                 generatedImage.src = imageUrl;
                                 // Add logging for dimensions after loading the last image in the stream
                                 generatedImage.onload = () => {
-                                    console.log(`[UI DEBUG] Размеры финального потокового изображения: ${generatedImage.naturalWidth}x${generatedImage.naturalHeight}`);
+                                    console.log(`[UI DEBUG] Final streamed image dimensions: ${generatedImage.naturalWidth}x${generatedImage.naturalHeight}`);
                                 };
                                 generatedImage.onerror = () => {
-                                    console.error(`[UI DEBUG] Ошибка загрузки финального потокового изображения.`);
+                                    console.error(`[UI DEBUG] Error loading final streamed image.`);
                                 };
                             }
                             if (data.seed && finalSeedDisplay) { // Check finalSeedDisplay
                                 finalSeedDisplay.querySelector('span').textContent = data.seed;
                             }
                         } catch (parseError) {
-                            console.warn('Ошибка парсинга оставшегося буфера JSON:', parseError, 'Buffer:', buffer);
+                            console.warn('Error parsing remaining JSON buffer:', parseError, 'Buffer:', buffer);
                         }
                     }
 
@@ -1717,14 +1775,14 @@
                         
                         // Add logging for dimensions after image load (non-streaming mode)
                         generatedImage.onload = () => {
-                            console.log(`[UI DEBUG] Размеры полученного изображения: ${generatedImage.naturalWidth}x${generatedImage.naturalHeight}`);
+                            console.log(`[UI DEBUG] Received image dimensions: ${generatedImage.naturalWidth}x${generatedImage.naturalHeight}`);
                         };
                         generatedImage.onerror = () => {
-                            console.error(`[UI DEBUG] Ошибка загрузки изображения.`);
+                            console.error(`[UI DEBUG] Error loading image.`);
                         };
 
                     } else {
-                        displayMessage('Сервер вернул пустой или некорректный ответ.', 'error');
+                        displayMessage('Сервер вернул пустой или недействительный ответ.', 'error');
                     }
                     if (result.seed && finalSeedDisplay) { // Check finalSeedDisplay
                         finalSeedDisplay.querySelector('span').textContent = result.seed;
@@ -1735,11 +1793,11 @@
                 if (error.name === 'AbortError') {
                     displayMessage('Генерация отменена пользователем.', 'info');
                 } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-                    console.error('Ошибка генерации изображения: Не удалось подключиться к серверу.', error);
-                    displayMessage('Ошибка генерации: Не удалось подключиться к серверу Imagine. Проверьте адрес сервера и убедитесь, что сервер запущен и доступен. Возможно, требуется настройка CORS.', 'error', 7000);
+                    console.error('Image generation error: Failed to connect to server.', error);
+                    displayMessage('Ошибка генерации: Не удалось подключиться к Imagine серверу. Проверьте адрес сервера и убедитесь, что он запущен и доступен. Возможно, потребуется настройка CORS.', 'error', 7000);
                 }
                 else {
-                    console.error('Ошибка генерации изображения:', error);
+                    console.error('Image generation error:', error);
                     displayMessage(`Ошибка генерации: ${error.message}`, 'error');
                 }
             } finally {
