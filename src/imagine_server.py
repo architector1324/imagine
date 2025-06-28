@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import os
 import io
 import json
@@ -10,6 +8,7 @@ import random
 import argparse
 import threading
 import diffusers
+import transformers
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import socketserver
@@ -324,16 +323,9 @@ class ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
     daemon_threads = True
 
 
-# main
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='SD image generator server', add_help=False)
-    parser.add_argument('-h', '--host', default='0.0.0.0', type=str, help='Server host address')
-    parser.add_argument('-p', '--port', default=5000, type=int, help='Server port')
-    parser.add_argument('-d', '--device', default=DEFAULT_DEVICE, type=str,  choices=['cpu', 'cuda', 'mps'], help='Model compute device')
-    parser.add_argument('-f', '--full_prec', action='store_true', help='Use full (float32) floating point precision instead of float16 (default).')
-    parser.add_argument('--help', action='help')
-
-    args = parser.parse_args()
+def serve(args):
+    global dev
+    global fp_prec
 
     dev = args.device
     fp_prec = torch.float32 if args.full_prec else torch.float16
