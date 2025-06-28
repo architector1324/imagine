@@ -34,10 +34,15 @@ if __name__ == '__main__':
     # server
     server_parser = subparsers.add_parser('serve', help='SD image generator server', add_help=False)
     server_parser.add_argument('--host', default='0.0.0.0', type=str, help='Server host address')
+    server_parser.add_argument('-m', '--models', default=imagine_server.DEFAULT_MODELS_PATH, type=str, help='SD models path')
     server_parser.add_argument('-p', '--port', default=5000, type=int, help='Server port')
     server_parser.add_argument('-d', '--device', default=imagine_server.DEFAULT_DEVICE, type=str,  choices=['cpu', 'cuda', 'mps'], help='Model compute device')
     server_parser.add_argument('-f', '--full_prec', action='store_true', help='Use full (float32) floating point precision instead of float16 (default).')
     server_parser.add_argument('--help', action='help')
+
+    # list
+    list_parser = subparsers.add_parser('list', help='List available models', add_help=False)
+    list_parser.add_argument('--help', action='help')
 
     args = parser.parse_args()
 
@@ -45,5 +50,7 @@ if __name__ == '__main__':
         imagine_server.serve(args)
     elif args.command == 'run':
         imagine_run.run(args)
+    elif args.command == 'list':
+        imagine_server.list_models()
     else:
         parser.print_help()

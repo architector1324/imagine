@@ -16,14 +16,15 @@ import socketserver
 from PIL import Image
 
 # settings
-DEFAULT_MODEL = '/home/arch/AI/models/sd/dreamshaper_8.safetensors'
 DEFAULT_FP_PREC = torch.float16
 DEFAULT_DEVICE = 'cuda'
+DEFAULT_MODELS_PATH = '~/.imagine/models'
 
 os.environ['HF_HUB_OFFLINE'] = '1'
 
 dev = DEFAULT_DEVICE
 fp_prec = DEFAULT_FP_PREC
+models_path = DEFAULT_MODELS_PATH
 
 SAMPLERS = {
     'ddim': diffusers.DDIMScheduler,
@@ -102,7 +103,9 @@ def generate_image_logic(data):
         raise ValueError("Prompt is required")
 
     # get parameters
-    model_path = data.get('model', DEFAULT_MODEL)
+    model_name = data.get('model', None)
+    model_path = os.path.join(os.path.expanduser(models_path), f'{model_name}.safetensors')
+
     width = data.get('width', 512)
     height = data.get('height', 512)
     num_steps = data.get('num_steps', 25)
@@ -156,7 +159,7 @@ def generate_image_logic(data):
 
     try:
         request_log_data = {
-            'model': model_path,
+            'model': model_name,
             'prompt': prompt,
             'neg': neg_prompt,
             'seed': seed,
@@ -230,6 +233,23 @@ def generate_image_logic(data):
             if proc.is_alive():
                 print(f"Warning: Generation thread (seed {seed}) did not stop gracefully. It might still be running or stuck.")
 
+
+def get_models():
+    expanded_models_path = os.path.expanduser(models_path)
+    os.makedirs(expanded_models_path, exist_ok=True)
+
+    model_names = []
+    # read models
+    for filename in os.listdir(expanded_models_path):
+        # filter
+        if filename.endswith(('.safetensors', '.ckpt')):
+            model_name = os.path.splitext(filename)[0]
+            model_names.append(model_name)
+    
+    # sort
+    model_names.sort()
+    return model_names
+
 class SDRequestHandler(BaseHTTPRequestHandler):
      # Handle OPTIONS preflight requests
     def do_OPTIONS(self):
@@ -239,6 +259,31 @@ class SDRequestHandler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Headers', 'Content-Type') # Allow Content-Type header
         self.send_header('Access-Control-Max-Age', '86400') # Cache preflight response for 24 hours
         self.end_headers()
+
+    def do_GET(self):
+        if self.path == '/models':
+            try:
+                # read models
+                model_names = get_models()
+
+                # response
+                response_data = {"models": model_names}
+                response_body = json.dumps(response_data).encode('utf-8')
+
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Length', str(len(response_body)))
+                self.end_headers()
+                self.wfile.write(response_body)
+                print(f"Served /models request. Found {len(model_names)} models.")
+
+            except Exception as e:
+                print(f"Error serving /models request: {e}")
+                error_response = json.dumps({"error": f"Failed to list models: {e}"}).encode('utf-8')
+                self.send_error(500, "Internal Server Error", error_response)
+        else:
+            self.send_error(404, "Not Found")
 
     def do_POST(self):
         if self.path == '/generate':
@@ -326,17 +371,25 @@ class ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
 def serve(args):
     global dev
     global fp_prec
+    global models_path
 
     dev = args.device
     fp_prec = torch.float32 if args.full_prec else torch.float16
+    models_path = args.models
 
     server_address = (args.host, args.port)
     httpd = ThreadedHTTPServer(server_address, SDRequestHandler)
-    print(f"Starting server on http://{args.host}:{args.port}")
+    print(f'Starting server on http://{args.host}:{args.port}')
 
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\nServer is shutting down.")
+        print('\nServer is shutting down.')
         httpd.shutdown()
         httpd.server_close()
+
+
+def list_models():
+    print('MODELS:')
+    for model in get_models():
+        print(model)

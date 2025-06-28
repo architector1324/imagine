@@ -10,7 +10,7 @@ from PIL import Image
 
 
 IMAGINE_URL = 'http://{address}/generate'
-DEFAULT_MODEL = '/home/arch/AI/models/sd/dreamshaper_8.safetensors'
+DEFAULT_MODEL = 'dreamshaper_8'
 SAMPLERS = ['ddim', 'euler', 'euler a', 'heun', 'lms', 'dpm++ 2m', 'dpm++ 2s', 'dpm++ sde', 'dpm2', 'dpm2 a']
 
 def send_generate_request(payload, address, stream, filename, meta, prefix="Image saved", resize=None):
