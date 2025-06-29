@@ -39,7 +39,7 @@ SAMPLERS = {
     'dpm2 a': diffusers.KDPM2AncestralDiscreteScheduler
 }
 
-def run_pipe(prompt, width, height, num_steps, guidance, strength, neg_prompt, img, gen, stream, pipe, cb_queue, res_queue, stop_event):
+def run_pipe(prompt, width, height, steps, guidance, strength, clip_skip, neg_prompt, img, gen, stream, pipe, cb_queue, res_queue, stop_event):
     # sample callback
     def sample_cb(iter, t, latents):
         # Check if the stop_event is set; if so, signal diffusers to stop
@@ -62,9 +62,10 @@ def run_pipe(prompt, width, height, num_steps, guidance, strength, neg_prompt, i
             prompt=prompt,
             width=width,
             height=height,
-            num_inference_steps=num_steps,
+            num_inference_steps=steps,
             guidance_scale=guidance,
             strength=strength,
+            clip_skip=clip_skip,
             negative_prompt=neg_prompt,
             image=img,
             generator=gen,
@@ -112,7 +113,7 @@ def generate_image_logic(data):
     # get parameters
     width = data.get('width', 512)
     height = data.get('height', 512)
-    num_steps = data.get('num_steps', 25)
+    steps = data.get('steps', 25)
     guidance = data.get('guidance', 7.0)
     sampler = data.get('sampler', 'dpm++ 2m')
     seed_str = data.get('seed', str(random.randint(0, 2**64 - 1)))
@@ -120,6 +121,7 @@ def generate_image_logic(data):
     stream = data.get('stream', None)
     img_b64 = data.get('img', None)
     strength = data.get('strength', 0.8)
+    clip_skip = data.get('clip', 1)
 
     seed = int(seed_str)
 
@@ -156,7 +158,7 @@ def generate_image_logic(data):
 
     # Start generation in a separate thread
     proc = threading.Thread(target=run_pipe, args=(
-        prompt, width, height, num_steps, guidance, strength, neg_prompt,
+        prompt, width, height, steps, guidance, strength, clip_skip, neg_prompt,
         input_img, gen, stream, pipe, cb_queue, res_queue, stop_event
     ))
     proc.start()
@@ -170,11 +172,12 @@ def generate_image_logic(data):
             'sampler': sampler,
             'width': width,
             'height': height,
-            'num_steps': num_steps,
+            'steps': steps,
             'guidance': guidance,
             'stream': stream,
             'img': f'{img_b64[:32]}...' if img_b64 else None,
-            'strength': strength
+            'strength': strength,
+            'clip': clip_skip
         }
         print(f'Generating image: {json.dumps(request_log_data)}')
 

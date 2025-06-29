@@ -17,7 +17,7 @@
             --primary-text: #d4d4d4;
             --input-text: #dcdcdc;
             --placeholder-text: #808080;
-            --status-fading-text: #6a9955; /* For "Generating image..." */
+            --status-fading-text: #808080; /* For "Generating image..." */
 
             --primary-border: #3c3c3c;
             --input-border: #3c3c3c;
@@ -31,8 +31,8 @@
             --collapsible-content-bg: #1e1e1e; /* Using body-bg for content consistency */
 
             /* Messages/Notifications */
-            --info-msg-bg: #31708f;
-            --info-msg-border: #2892d7;
+            --info-msg-bg: #505050;
+            --info-msg-border: #5c5c5c;
             --info-msg-text: #d4d4d4;
 
             --success-msg-bg: #1e3a22;
@@ -671,6 +671,21 @@
                                     If > 0, intermediate images will be streamed every N steps.
                                 </p>
                             </div>
+                            <div class="mt-4">
+                                <label for="clipSkip" class="block text-gray-400 text-sm font-medium mb-2">
+                                    CLIP Skip (Leave empty for model default):
+                                </label>
+                                <input
+                                    type="number"
+                                    id="clipSkip"
+                                    min="0"
+                                    class="w-full form-input-dark"
+                                    placeholder="e.g., 1, 2, 4"
+                                />
+                                <p class="text-xs text-gray-500 mt-2">
+                                    Controls how many layers to skip in CLIP text encoder (0 to 12).
+                                </p>
+                            </div>
                         </div>
                     </div>
                     <!-- END: Generation Parameters -->
@@ -832,6 +847,7 @@
         let base64ImageInput;
         let strengthInput;
         let streamInput; 
+        let clipSkipInput; // NEW: Declare clipSkipInput
         let generateButton;
         let resetSettingsButton; 
 
@@ -884,6 +900,7 @@
             base64ImageInput = document.getElementById('base64Image');
             strengthInput = document.getElementById('strength');
             streamInput = document.getElementById('stream'); 
+            clipSkipInput = document.getElementById('clipSkip'); // NEW: Initialize clipSkipInput
             generateButton = document.getElementById('generateButton'); 
             resetSettingsButton = document.getElementById('resetSettingsButton'); 
             
@@ -1214,6 +1231,7 @@
                 seed: seedInput ? seedInput.value : '', 
                 strength: strengthInput.value,
                 stream: streamInput.value,
+                clip: clipSkipInput.value, // NEW: Save clipSkip value
             };
             localStorage.setItem('imagineSettings', JSON.stringify(settings));
         };
@@ -1247,6 +1265,9 @@
             }
             strengthInput.value = (settings && settings.strength) || '0.8';
             streamInput.value = (settings && settings.stream) || '0';
+            if (clipSkipInput) { // NEW: Load clipSkip value
+                clipSkipInput.value = (settings && settings.clip) || '';
+            }
 
             // Also ensure input image preview is cleared if no image in settings
             if (!settings || !settings.img) {
@@ -1268,6 +1289,7 @@
                 seed: seedInput ? seedInput.value : 'N/A', // Display 'N/A' if element doesn't exist
                 strength: strengthInput.value,
                 stream: streamInput.value,
+                clip: clipSkipInput ? clipSkipInput.value : 'N/A', // NEW: Debug shows clipSkip value
                 hasImage: !!base64ImageInput.value
             });
             
@@ -1465,13 +1487,14 @@
 
                     widthInput.value = meta.width !== undefined ? meta.width : '512';
                     heightInput.value = meta.height !== undefined ? meta.height : '512';
-                    numStepsInput.value = meta.num_steps !== undefined ? meta.num_steps : '25';
+                    numStepsInput.value = meta.steps !== undefined ? meta.steps : '25';
                     guidanceInput.value = meta.guidance !== undefined ? meta.guidance : '7.0';
                     samplerInput.value = meta.sampler || 'dpm++ 2m';
                     seedInput.value = meta.seed !== undefined ? meta.seed : ''; // Keep as string for number input
                     streamInput.value = meta.stream !== undefined ? meta.stream : '0';
                     strengthInput.value = meta.strength !== undefined ? meta.strength : '0.8';
-                    
+                    clipSkipInput.value = meta.clip !== undefined ? meta.clip : ''; // NEW: Load clipSkip
+
                     // Handle model name from JSON file (meta.model contains the name, not path)
                     currentModelServerPath = meta.model || '';
                     if (modelSelect) { // Attempt to set the select value
@@ -1537,14 +1560,15 @@
                         prompt: promptInput.value.trim() || '', 
                         width: parseInt(widthInput.value) || 512,
                         height: parseInt(heightInput.value) || 512,
-                        num_steps: parseInt(numStepsInput.value) || 25,
+                        steps: parseInt(numStepsInput.value) || 25,
                         guidance: parseFloat(guidanceInput.value) || 7.0,
                         sampler: samplerInput.value || 'dpm++ 2m',
                         seed: seedInput.value ? String(seedInput.value) : null, // Ensure seed is saved as string if present
                         neg: negativePromptInput.value.trim() || null, 
                         stream: parseInt(streamInput.value) || null,
                         img: base64ImageInput.value ? base64ImageInput.value.substring(IMAGE_DATA_PREFIX.length) : null, // Remove prefix
-                        strength: parseFloat(strengthInput.value) || 0.8
+                        strength: parseFloat(strengthInput.value) || 0.8,
+                        clip: clipSkipInput.value ? parseInt(clipSkipInput.value) : null // NEW: Save clipSkip
                     },
                     out: generatedImage.src && generatedImage.src.startsWith(IMAGE_DATA_PREFIX) ?
                         generatedImage.src.substring(IMAGE_DATA_PREFIX.length) : null // Remove prefix
@@ -1642,12 +1666,13 @@
                 neg: negativePromptInput.value.trim() || undefined,
                 width: parseInt(widthInput.value) || 512,
                 height: parseInt(heightInput.value) || 512,
-                num_steps: parseInt(numStepsInput.value) || 25,
+                steps: parseInt(numStepsInput.value) || 25,
                 guidance: parseFloat(guidanceInput.value) || 7.0,
                 sampler: samplerInput.value || 'dpm++ 2m',
                 // Updated: Convert seed to string if it exists, as per the user's updated understanding
                 seed: seedInput.value ? String(seedInput.value) : undefined, 
-                stream: parseInt(streamInput.value) || undefined
+                stream: parseInt(streamInput.value) || undefined,
+                clip: clipSkipInput.value ? parseInt(clipSkipInput.value) : undefined // NEW: Add clipSkip to payload
             };
 
             // Add logging for sent dimensions

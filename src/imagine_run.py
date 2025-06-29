@@ -39,7 +39,7 @@ def send_generate_request(payload, address, stream, filename, meta, prefix="Imag
             with open(meta_filename, 'w') as f:
                 f.write(json.dumps(meta, indent=2, ensure_ascii=False))
 
-            print(f'{prefix} [{steps}/{payload["num_steps"]}]: {filename}')
+            print(f'{prefix} [{steps}/{payload["steps"]}]: {filename}')
             steps += 1
         elif 'error' in result:
             print(f'Server error: {result["error"]}')
@@ -65,14 +65,15 @@ def run(args):
             'prompt': prompt,
             'width': args.width,
             'height': args.height,
-            'num_steps': args.num_steps,
+            'steps': args.steps,
             'guidance': args.guidance,
             'sampler': args.sampler,
             'seed': str(args.seed),
             'neg': args.neg,
             'stream': args.stream,
             'img': img_base64,
-            'strength': args.strength
+            'strength': args.strength,
+            'clip': args.clip
         }
 
         meta = {
@@ -101,14 +102,15 @@ def run(args):
                 'prompt': prompt,
                 'width': w,
                 'height': h,
-                'num_steps': args.num_steps,
+                'steps': args.steps,
                 'guidance': args.guidance,
                 'sampler': args.sampler,
                 'seed': str(args.seed),
                 'neg': args.neg,
                 'stream': args.stream,
                 'img': img_base64,
-                'strength': 0.35
+                'strength': 0.35,
+                'clip': args.clip
             }
 
             send_generate_request(hires_payload, args.address, args.stream, filename, meta, prefix="Image hires.fix saved", resize=(args.width, args.height))
