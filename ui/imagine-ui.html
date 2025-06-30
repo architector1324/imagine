@@ -671,10 +671,31 @@
                                     If > 0, intermediate images will be streamed every N steps.
                                 </p>
                             </div>
+
+                            <!-- NEW: Hires Fix Scale input -->
+                            <div class="mt-4">
+                                <label for="hiresScale" class="block text-gray-400 text-sm font-medium mb-2">
+                                    Hires Fix Scale (Leave empty or 1 to disable):
+                                </label>
+                                <input
+                                    type="number"
+                                    id="hiresScale"
+                                    value=""
+                                    min="1.0"
+                                    step="0.1"
+                                    class="w-full form-input-dark"
+                                    placeholder="e.g., 1.5, 2.0"
+                                />
+                                <p class="text-xs text-gray-500 mt-2">
+                                    Scales the image up, then runs img2img with denoising strength 0.35. (txt2img only)
+                                </p>
+                            </div>
+                            <!-- END NEW: Hires Fix Scale input -->
+
                             <div class="mt-4">
                                 <label for="clipSkip" class="block text-gray-400 text-sm font-medium mb-2">
                                     CLIP Skip (Leave empty for model default):
-                                </label>
+                                &nbsp;</label>
                                 <input
                                     type="number"
                                     id="clipSkip"
@@ -847,7 +868,8 @@
         let base64ImageInput;
         let strengthInput;
         let streamInput; 
-        let clipSkipInput; // NEW: Declare clipSkipInput
+        let clipSkipInput; 
+        let hiresScaleInput; 
         let generateButton;
         let resetSettingsButton; 
 
@@ -861,7 +883,7 @@
         // New elements for model selection
         let modelSelect;
         let modelStatusText;
-        let fetchModelsButton; // New element
+        let fetchModelsButton; 
 
         // New: Reset Confirmation Modal Elements
         let resetConfirmModal;
@@ -877,7 +899,7 @@
         let loadJsonFileInput;
         let saveSettingsButton;
 
-        let currentModelServerPath = ''; // This will now store the model name (e.g., 'dreamshaper_8')
+        let currentModelServerPath = ''; 
         let messageTimeoutId = null; 
         let currentStep = 0; 
 
@@ -900,7 +922,8 @@
             base64ImageInput = document.getElementById('base64Image');
             strengthInput = document.getElementById('strength');
             streamInput = document.getElementById('stream'); 
-            clipSkipInput = document.getElementById('clipSkip'); // NEW: Initialize clipSkipInput
+            clipSkipInput = document.getElementById('clipSkip'); 
+            hiresScaleInput = document.getElementById('hiresScale'); 
             generateButton = document.getElementById('generateButton'); 
             resetSettingsButton = document.getElementById('resetSettingsButton'); 
             
@@ -914,7 +937,7 @@
             // New model selection elements
             modelSelect = document.getElementById('modelSelect');
             modelStatusText = document.getElementById('modelStatus');
-            fetchModelsButton = document.getElementById('fetchModelsButton'); // Initialize new button
+            fetchModelsButton = document.getElementById('fetchModelsButton'); 
 
             // Reset Confirmation Modal Elements
             resetConfirmModal = document.getElementById('resetConfirmModal');
@@ -983,7 +1006,7 @@
 
 
             // Attach event listeners
-            if (imgUploadInput) { 
+            if (imgUploadInput && hiresScaleInput) { 
                 imgUploadInput.addEventListener('change', (event) => {
                     const file = event.target.files[0];
                     if (file) {
@@ -992,15 +1015,21 @@
                             base64ImageInput.value = e.target.result;
                             imagePreview.src = e.target.result;
                             imagePreviewContainer.classList.remove('hidden');
+                            hiresScaleInput.disabled = true; // Disable hiresScale when img2img is active
+                            hiresScaleInput.value = ''; // Clear hiresScale value
                         };
                         reader.readAsDataURL(file);
                     } else {
                         base64ImageInput.value = '';
                         imagePreview.src = '';
                         imagePreviewContainer.classList.add('hidden');
+                        hiresScaleInput.disabled = false; // Re-enable hiresScale
                     }
                 });
+                // Initial check on load
+                hiresScaleInput.disabled = !!imgUploadInput.files[0];
             }
+
 
             if (imagineForm) { 
                 imagineForm.addEventListener('submit', handleFormSubmit);
@@ -1010,13 +1039,6 @@
                 header.addEventListener('click', handleCollapsibleClick);
             });
 
-            // Removed automatic fetch on server address change/blur as per user request
-            // if (serverAddressInput) {
-            //     serverAddressInput.addEventListener('change', fetchAvailableModels);
-            //     serverAddressInput.addEventListener('blur', fetchAvailableModels);
-            // }
-
-            // New: Add listener for the Fetch Models button
             if (fetchModelsButton) {
                 fetchModelsButton.addEventListener('click', fetchAvailableModels);
             }
@@ -1029,7 +1051,6 @@
                 });
             }
 
-            // Fix for the bug: Add event listener to promptInput
             if (promptInput) {
                 promptInput.addEventListener('input', updateGenerateButtonState);
             }
@@ -1095,40 +1116,41 @@
 
         // --- Image Display State Management ---
         const resetImageDisplayState = () => {
-            generatedImage.src = ''; // Explicitly set src to empty string
-            generatedImage.style.display = 'none'; // Ensure it's hidden
+            generatedImage.src = ''; 
+            generatedImage.style.display = 'none'; 
             placeholderTextOverlay.textContent = 'Click \'Generate\'';
-            placeholderTextOverlay.style.display = 'flex'; // Show placeholder as flex
-            placeholderTextOverlay.classList.remove('fade-animation'); // Ensure no fade on initial state
-            aboveImageStatusText.style.display = 'none'; // Hide above text
-            aboveImageStatusText.classList.remove('fade-animation'); // Ensure no fade
-            if (finalSeedDisplay) { // Check if elements exist
-                finalSeedDisplay.querySelector('span').textContent = ''; // Clear seed text
-                finalSeedDisplay.style.display = 'none'; // Hide seed display's parent
+            placeholderTextOverlay.style.display = 'flex'; 
+            placeholderTextOverlay.classList.remove('fade-animation'); 
+            aboveImageStatusText.style.display = 'none'; 
+            aboveImageStatusText.classList.remove('fade-animation'); 
+            if (finalSeedDisplay) { 
+                finalSeedDisplay.querySelector('span').textContent = ''; 
+                finalSeedDisplay.style.display = 'none'; 
             }
         };
 
-        const showGeneratingStateNoImage = () => {
-            generatedImage.src = ''; // Ensure image source is cleared
-            generatedImage.style.display = 'none'; // Keep image hidden
-            placeholderTextOverlay.textContent = 'Generating image...';
-            placeholderTextOverlay.style.display = 'flex'; // Show placeholder
-            placeholderTextOverlay.classList.add('fade-animation'); // Add fade for generating text
-            aboveImageStatusText.style.display = 'none'; // Keep above text hidden
-            aboveImageStatusText.classList.remove('fade-animation'); // Ensure no fade
+        const showGeneratingStateNoImage = (statusText = 'Generating image...') => {
+            generatedImage.src = ''; 
+            generatedImage.style.display = 'none'; 
+            placeholderTextOverlay.textContent = statusText;
+            placeholderTextOverlay.style.display = 'flex'; 
+            placeholderTextOverlay.classList.add('fade-animation'); 
+            aboveImageStatusText.style.display = 'none'; 
+            aboveImageStatusText.classList.remove('fade-animation'); 
             if (finalSeedDisplay) {
-                finalSeedDisplay.style.display = 'none'; // Hide seed display's parent
+                finalSeedDisplay.style.display = 'none'; 
             }
         };
 
-        const showGeneratingStateWithImage = () => {
-            placeholderTextOverlay.style.display = 'none'; // Hide inner placeholder
-            placeholderTextOverlay.classList.remove('fade-animation'); // Remove animation
-            generatedImage.style.display = 'block'; // Show image
-            aboveImageStatusText.style.display = 'block'; // Show above image status
-            aboveImageStatusText.classList.add('fade-animation'); // Add fade to above text
+        const showGeneratingStateWithImage = (statusText = '') => {
+            placeholderTextOverlay.style.display = 'none'; 
+            placeholderTextOverlay.classList.remove('fade-animation'); 
+            generatedImage.style.display = 'block'; 
+            aboveImageStatusText.textContent = statusText; 
+            aboveImageStatusText.style.display = 'block'; 
+            aboveImageStatusText.classList.add('fade-animation'); 
             if (finalSeedDisplay) {
-                finalSeedDisplay.style.display = 'none'; // Keep seed hidden during generation
+                finalSeedDisplay.style.display = 'none'; 
             }
         };
 
@@ -1137,23 +1159,19 @@
             placeholderTextOverlay.classList.remove('fade-animation');
             aboveImageStatusText.style.display = 'none';
             aboveImageStatusText.classList.remove('fade-animation');
-            // Do not hide generatedImage or finalSeed here, let setGeneratingState handle the final state.
         };
 
         // --- Model Selection Functions ---
         const populateModelSelect = (modelsArray) => {
-            modelSelect.innerHTML = ''; // Clear existing options
+            modelSelect.innerHTML = ''; 
 
-            // Add placeholder option
             const placeholderOption = document.createElement('option');
             placeholderOption.value = '';
             placeholderOption.textContent = '--- Select a model ---';
-            placeholderOption.disabled = true; // Make it unselectable
-            placeholderOption.selected = true; // Make it default selected
+            placeholderOption.disabled = true; 
+            placeholderOption.selected = true; 
             modelSelect.appendChild(placeholderOption);
 
-
-            // Add models from the server
             modelsArray.forEach(modelName => {
                 const option = document.createElement('option');
                 option.value = modelName;
@@ -1161,32 +1179,28 @@
                 modelSelect.appendChild(option);
             });
 
-            // Try to select the previously chosen model if it exists in the new list
             if (currentModelServerPath && modelsArray.includes(currentModelServerPath)) {
                 modelSelect.value = currentModelServerPath;
             } else if (modelsArray.length > 0) {
-                // If previously selected model is not found, or no model was saved,
-                // select the first actual model in the list if any are available.
                 modelSelect.value = modelsArray[0];
-                currentModelServerPath = modelsArray[0]; // Update the variable too
+                currentModelServerPath = modelsArray[0]; 
             } else {
-                // If no models are available, ensure modelSelect is back to empty/placeholder
                 modelSelect.value = ''; 
                 currentModelServerPath = '';
             }
-            updateGenerateButtonState(); // Update button state after populating models
+            updateGenerateButtonState(); 
         };
 
         const fetchAvailableModels = async () => {
             modelStatusText.textContent = 'Loading models...';
-            modelSelect.disabled = true; // Disable select during fetch
-            generateButton.disabled = true; // Also disable generate button during fetch
-            fetchModelsButton.disabled = true; // Disable fetch button during fetch
+            modelSelect.disabled = true; 
+            generateButton.disabled = true; 
+            fetchModelsButton.disabled = true; 
 
             const serverUrl = serverAddressInput.value.trim();
             if (!serverUrl) {
                 modelStatusText.textContent = 'Server address is empty.';
-                populateModelSelect([]); // Clear models
+                populateModelSelect([]); 
                 updateGenerateButtonState();
                 return;
             }
@@ -1206,12 +1220,12 @@
             } catch (error) {
                 console.error('Error fetching models:', error);
                 modelStatusText.textContent = `Error loading models: ${error.message}`;
-                populateModelSelect([]); // Clear models on error
+                populateModelSelect([]); 
             } finally {
-                modelSelect.disabled = false; // Re-enable select
-                fetchModelsButton.disabled = false; // Re-enable fetch button
-                saveSettings(); // Save current model selection (or lack thereof)
-                updateGenerateButtonState(); // Re-evaluate generate button state
+                modelSelect.disabled = false; 
+                fetchModelsButton.disabled = false; 
+                saveSettings(); 
+                updateGenerateButtonState(); 
             }
         };
 
@@ -1220,7 +1234,7 @@
         const saveSettings = () => {
             const settings = {
                 serverAddress: serverAddressInput.value,
-                model: currentModelServerPath, // Now saving model name
+                model: currentModelServerPath, 
                 prompt: promptInput.value,
                 negativePrompt: negativePromptInput.value,
                 width: widthInput.value,
@@ -1231,12 +1245,12 @@
                 seed: seedInput ? seedInput.value : '', 
                 strength: strengthInput.value,
                 stream: streamInput.value,
-                clip: clipSkipInput.value, // NEW: Save clipSkip value
+                clip: clipSkipInput.value, 
+                hires: hiresScaleInput.value, 
             };
             localStorage.setItem('imagineSettings', JSON.stringify(settings));
         };
 
-        // Modified: Load settings from local storage or set default values
         const loadSettings = () => {
             const settingsString = localStorage.getItem('imagineSettings');
             let settings = null;
@@ -1245,13 +1259,10 @@
                     settings = JSON.parse(settingsString);
                 } catch (e) {
                     console.error("Error parsing settings from localStorage, using default values.", e);
-                    // If parsing fails, treat as no settings
                 }
             }
 
-            // Set default values for all fields
             serverAddressInput.value = (settings && settings.serverAddress) || 'http://localhost:5000';
-            // Set currentModelServerPath from loaded settings
             currentModelServerPath = (settings && settings.model) || ''; 
             promptInput.value = (settings && settings.prompt) || '';
             negativePromptInput.value = (settings && settings.negativePrompt) || '';
@@ -1260,25 +1271,30 @@
             numStepsInput.value = (settings && settings.numSteps) || '25';
             guidanceInput.value = (settings && settings.guidance) || '7.0';
             samplerInput.value = (settings && settings.sampler) || 'dpm++ 2m';
-            if (seedInput) { // Check if seedInput element exists before accessing its value
+            if (seedInput) { 
                 seedInput.value = (settings && settings.seed) || '';
             }
             strengthInput.value = (settings && settings.strength) || '0.8';
             streamInput.value = (settings && settings.stream) || '0';
-            if (clipSkipInput) { // NEW: Load clipSkip value
+            if (clipSkipInput) { 
                 clipSkipInput.value = (settings && settings.clip) || '';
             }
+            if (hiresScaleInput) { 
+                hiresScaleInput.value = (settings && settings.hires) || '';
+            }
 
-            // Also ensure input image preview is cleared if no image in settings
             if (!settings || !settings.img) {
                 base64ImageInput.value = '';
                 imagePreview.src = '';
                 imagePreviewContainer.classList.add('hidden');
+                if (hiresScaleInput) hiresScaleInput.disabled = false; 
+            } else {
+                if (hiresScaleInput) hiresScaleInput.disabled = true;
             }
 
             console.log('[DEBUG] Settings loaded. Current values:', {
                 serverAddress: serverAddressInput.value,
-                model: currentModelServerPath, // Debug shows model name
+                model: currentModelServerPath, 
                 prompt: promptInput.value,
                 negativePrompt: negativePromptInput.value,
                 width: widthInput.value,
@@ -1286,14 +1302,14 @@
                 numSteps: numStepsInput.value,
                 guidance: guidanceInput.value,
                 sampler: samplerInput.value,
-                seed: seedInput ? seedInput.value : 'N/A', // Display 'N/A' if element doesn't exist
+                seed: seedInput ? seedInput.value : 'N/A', 
                 strength: strengthInput.value,
                 stream: streamInput.value,
-                clip: clipSkipInput ? clipSkipInput.value : 'N/A', // NEW: Debug shows clipSkip value
+                clip: clipSkipInput ? clipSkipInput.value : 'N/A', 
+                hires: hiresScaleInput ? hiresScaleInput.value : 'N/A', 
                 hasImage: !!base64ImageInput.value
             });
             
-            // After loading settings, fetch available models to populate the select dropdown (initial load)
             fetchAvailableModels();
         };
 
@@ -1302,7 +1318,7 @@
             floatingMessageText.textContent = message;
             floatingMessageContainer.classList.remove('hide-animation');
             floatingMessageContainer.classList.add(type, 'show'); 
-            floatingMessageContainer.style.display = 'block'; // Ensure it's visible
+            floatingMessageContainer.style.display = 'block'; 
             
             if (messageTimeoutId) {
                 clearTimeout(messageTimeoutId);
@@ -1312,7 +1328,7 @@
                 floatingMessageContainer.classList.remove('show');
                 floatingMessageContainer.classList.add('hide-animation');
                 setTimeout(() => {
-                    floatingMessageContainer.style.display = 'none'; // Completely hide
+                    floatingMessageContainer.style.display = 'none'; 
                     floatingMessageContainer.classList.remove('hide-animation'); 
                     floatingMessageText.textContent = ''; 
                 }, 400); 
@@ -1325,14 +1341,13 @@
                 messageTimeoutId = null;
             }
             floatingMessageContainer.classList.remove('show', 'hide-animation');
-            floatingMessageContainer.style.display = 'none'; // Completely hide
+            floatingMessageContainer.style.display = 'none'; 
             floatingMessageText.textContent = '';
             floatingMessageContainer.classList.remove('info', 'success', 'error'); 
         };
 
         // --- Generate Button State Management ---
         const updateGenerateButtonState = () => {
-            // Button should be disabled if no model is selected or if prompt is empty
             const isModelSelected = modelSelect && modelSelect.value !== '';
             const isPromptEmpty = promptInput && promptInput.value.trim() === '';
             
@@ -1348,7 +1363,6 @@
                 generateButton.textContent = 'Stop';
                 generateButton.classList.remove('btn-primary');
                 generateButton.classList.add('btn-stop');
-                // Disable all relevant form inputs during generation
                 Array.from(imagineForm.elements).forEach(element => {
                     if (element.id !== 'generateButton') { 
                         element.disabled = true;
@@ -1361,17 +1375,16 @@
                 if (loadSettingsButton) loadSettingsButton.disabled = true;
                 if (saveSettingsButton) saveSettingsButton.disabled = true;
                 if (resetSettingsButton) resetSettingsButton.disabled = true; 
-                if (modelSelect) modelSelect.disabled = true; // Disable model select
-                if (fetchModelsButton) fetchModelsButton.disabled = true; // Disable fetch button during generation
+                if (modelSelect) modelSelect.disabled = true; 
+                if (fetchModelsButton) fetchModelsButton.disabled = true; 
+                if (hiresScaleInput) hiresScaleInput.disabled = true; 
                 
-                // Update image display state for generation
                 showGeneratingStateNoImage();
 
             } else {
                 generateButton.textContent = 'Generate'; 
                 generateButton.classList.remove('btn-stop');
                 generateButton.classList.add('btn-primary');
-                // Re-enable form inputs
                 Array.from(imagineForm.elements).forEach(element => {
                     element.disabled = false;
                 });
@@ -1382,21 +1395,20 @@
                 if (loadSettingsButton) loadSettingsButton.disabled = false;
                 if (saveSettingsButton) saveSettingsButton.disabled = false;
                 if (resetSettingsButton) resetSettingsButton.disabled = false; 
-                if (modelSelect) modelSelect.disabled = false; // Re-enable model select
-                if (fetchModelsButton) fetchModelsButton.disabled = false; // Re-enable fetch button
-
-                // Hide generation status and show final elements
+                if (modelSelect) modelSelect.disabled = false; 
+                if (fetchModelsButton) fetchModelsButton.disabled = false; 
+                if (hiresScaleInput) hiresScaleInput.disabled = !!base64ImageInput.value; 
+                
                 hideAllGenerationStatus();
-                // Check if an image was actually generated before showing seed
                 if (generatedImage.src && generatedImage.src !== '') { 
-                     generatedImage.style.display = 'block'; // Show generated image
+                     generatedImage.style.display = 'block'; 
                      if (finalSeedDisplay) {
-                        finalSeedDisplay.style.display = 'block'; // Show seed
+                        finalSeedDisplay.style.display = 'block'; 
                      }
                 } else {
-                    resetImageDisplayState(); // If no image came (e.g., error), revert to initial prompt
+                    resetImageDisplayState(); 
                 }
-                updateGenerateButtonState(); // Re-evaluate generate button state after generation
+                updateGenerateButtonState(); 
             }
         };
 
@@ -1412,7 +1424,7 @@
                 if (content.classList.contains('hidden')) {
                     content.classList.remove('hidden');
                     header.classList.add('open');
-                    icon.textContent = '▼'; // Change to down arrow
+                    icon.textContent = '▼'; 
                     icon.classList.remove('rotate-90');
                     icon.classList.add('rotate-0');
                     content.style.maxHeight = content.scrollHeight + "px"; 
@@ -1426,7 +1438,7 @@
                     setTimeout(() => {
                         content.classList.add('hidden');
                         header.classList.remove('open');
-                        icon.textContent = '▶'; // Change to right arrow
+                        icon.textContent = '▶'; 
                         icon.classList.remove('rotate-0');
                         icon.classList.add('rotate-90');
                         content.style.maxHeight = ''; 
@@ -1437,38 +1449,34 @@
 
         // --- Handle Loading Settings from JSON File ---
         const handleLoadSettingsFromFile = (event) => {
-            console.log('handleLoadSettingsFromFile called.'); // Debug log: Function entered
+            console.log('handleLoadSettingsFromFile called.'); 
             const file = event.target.files[0];
             if (!file) {
                 displayMessage('No file selected.', 'info');
-                console.log('No file selected in handleLoadSettingsFromFile.'); // Debug log: No file
+                console.log('No file selected in handleLoadSettingsFromFile.'); 
                 return;
             }
 
             const reader = new FileReader();
             reader.onload = (e) => {
-                console.log('FileReader onload triggered.'); // Debug log: FileReader loaded
+                console.log('FileReader onload triggered.'); 
                 try {
                     const jsonContent = JSON.parse(e.target.result);
                     const meta = jsonContent.meta;
-                    const outImageBase64 = jsonContent.out; // This is the generated image 
+                    const outImageBase64 = jsonContent.out; 
 
-                    // --- DEBUG LOGGING ---
                     console.log('JSON file loaded. (Before meta check)'); 
                     if (meta) {
                         console.log('Meta content:', meta); 
                     } else {
                         console.log('"meta" object not found in JSON.'); 
                     }
-                    // --- END DEBUG LOGGING ---
-
 
                     if (!meta) {
                         displayMessage('Invalid JSON format: "meta" object not found.', 'error');
                         return;
                     }
 
-                    // STRICT LOADING: Check type and assign, or clear and show error
                     if (typeof meta.prompt === 'string') {
                         promptInput.value = meta.prompt;
                     } else {
@@ -1490,60 +1498,57 @@
                     numStepsInput.value = meta.steps !== undefined ? meta.steps : '25';
                     guidanceInput.value = meta.guidance !== undefined ? meta.guidance : '7.0';
                     samplerInput.value = meta.sampler || 'dpm++ 2m';
-                    seedInput.value = meta.seed !== undefined ? meta.seed : ''; // Keep as string for number input
+                    seedInput.value = meta.seed !== undefined ? meta.seed : ''; 
                     streamInput.value = meta.stream !== undefined ? meta.stream : '0';
                     strengthInput.value = meta.strength !== undefined ? meta.strength : '0.8';
-                    clipSkipInput.value = meta.clip !== undefined ? meta.clip : ''; // NEW: Load clipSkip
+                    clipSkipInput.value = meta.clip !== undefined ? meta.clip : ''; 
+                    hiresScaleInput.value = meta.hires !== undefined ? meta.hires : ''; 
 
-                    // Handle model name from JSON file (meta.model contains the name, not path)
                     currentModelServerPath = meta.model || '';
-                    if (modelSelect) { // Attempt to set the select value
+                    if (modelSelect) { 
                         modelSelect.value = currentModelServerPath;
                     }
 
-                    // Handle input image (img2img)
                     if (meta.img) {
                         const inputImageUrl = IMAGE_DATA_PREFIX + meta.img;
                         imagePreview.src = inputImageUrl;
-                        base64ImageInput.value = inputImageUrl; // Store full data URI
+                        base64ImageInput.value = inputImageUrl; 
                         imagePreviewContainer.classList.remove('hidden');
+                        hiresScaleInput.disabled = true; 
                     } else {
                         imagePreview.src = '';
                         base64ImageInput.value = '';
                         imagePreviewContainer.classList.add('hidden');
+                        hiresScaleInput.disabled = false; 
                     }
 
-                    // Handle generated output image (out)
                     if (outImageBase64) {
                         const generatedImageUrl = IMAGE_DATA_PREFIX + outImageBase64;
                         generatedImage.src = generatedImageUrl;
-                        generatedImage.style.display = 'block'; // Ensure image is visible
-                        placeholderTextOverlay.style.display = 'none'; // Hide placeholder
-                        placeholderTextOverlay.classList.remove('fade-animation'); // Remove animation
-                        // Set final seed display if available in meta or from output JSON
+                        generatedImage.style.display = 'block'; 
+                        placeholderTextOverlay.style.display = 'none'; 
+                        placeholderTextOverlay.classList.remove('fade-animation'); 
                         if (meta.seed && finalSeedDisplay) {
                             finalSeedDisplay.querySelector('span').textContent = meta.seed;
                             finalSeedDisplay.style.display = 'block';
-                        } else if (jsonContent.seed && finalSeedDisplay) { // Fallback if seed is in root (less likely with meta)
+                        } else if (jsonContent.seed && finalSeedDisplay) { 
                             finalSeedDisplay.querySelector('span').textContent = jsonContent.seed;
                             finalSeedDisplay.style.display = 'block';
                         }
                     } else {
-                        resetImageDisplayState(); // Clear generated image and seed if no 'out'
+                        resetImageDisplayState(); 
                     }
 
                     displayMessage('Settings loaded successfully.', 'success');
-                    saveSettings(); // Save loaded settings to local storage
-                    // Re-calculate image frame dimensions based on loaded width/height
+                    saveSettings(); 
                     const width = parseInt(widthInput.value) || 512;
                     const height = parseInt(heightInput.value) || 512;
                     imageFrame.style.setProperty('--image-aspect-ratio', `${width}/${height}`);
-                    updateGenerateButtonState(); // Update button state after loading
+                    updateGenerateButtonState(); 
                 } catch (error) {
                     console.error('Error loading or parsing JSON file:', error);
                     displayMessage(`Error loading settings: ${error.message}`, 'error');
                 } finally {
-                    // Reset file input to allow selecting the same file again if needed
                     event.target.value = '';
                 }
             };
@@ -1555,26 +1560,25 @@
             try {
                 const outputJson = {
                     meta: {
-                        model: currentModelServerPath || null, // Now saving model NAME
-                        // Save prompt and neg directly as strings
+                        model: currentModelServerPath || null, 
                         prompt: promptInput.value.trim() || '', 
                         width: parseInt(widthInput.value) || 512,
                         height: parseInt(heightInput.value) || 512,
                         steps: parseInt(numStepsInput.value) || 25,
                         guidance: parseFloat(guidanceInput.value) || 7.0,
                         sampler: samplerInput.value || 'dpm++ 2m',
-                        seed: seedInput.value ? String(seedInput.value) : null, // Ensure seed is saved as string if present
+                        seed: seedInput.value ? String(seedInput.value) : null, 
                         neg: negativePromptInput.value.trim() || null, 
                         stream: parseInt(streamInput.value) || null,
-                        img: base64ImageInput.value ? base64ImageInput.value.substring(IMAGE_DATA_PREFIX.length) : null, // Remove prefix
+                        img: base64ImageInput.value ? base64ImageInput.value.substring(IMAGE_DATA_PREFIX.length) : null, 
                         strength: parseFloat(strengthInput.value) || 0.8,
-                        clip: clipSkipInput.value ? parseInt(clipSkipInput.value) : null // NEW: Save clipSkip
+                        clip: clipSkipInput.value ? parseInt(clipSkipInput.value) : null, 
+                        hires: hiresScaleInput.value ? parseFloat(hiresScaleInput.value) : null 
                     },
                     out: generatedImage.src && generatedImage.src.startsWith(IMAGE_DATA_PREFIX) ?
-                        generatedImage.src.substring(IMAGE_DATA_PREFIX.length) : null // Remove prefix
+                        generatedImage.src.substring(IMAGE_DATA_PREFIX.length) : null 
                 };
 
-                // Remove null/undefined/empty string fields from meta after potential array conversion
                 Object.keys(outputJson.meta).forEach(key => {
                     const value = outputJson.meta[key];
                     if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '') || (Array.isArray(value) && value.length === 0)) {
@@ -1582,13 +1586,12 @@
                     }
                 });
 
-                const jsonString = JSON.stringify(outputJson, null, 2); // Pretty print JSON
+                const jsonString = JSON.stringify(outputJson, null, 2); 
 
                 const blob = new Blob([jsonString], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                // Format the timestamp as YYYYMMDD_HHMMSS.json
                 const now = new Date();
                 const year = now.getFullYear();
                 const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -1598,7 +1601,6 @@
                 const seconds = now.getSeconds().toString().padStart(2, '0');
                 const timestamp = `${year}${month}${day}_${hours}${minutes}${seconds}`;
                 
-                // Set the download filename directly to the timestamp format
                 a.download = `${timestamp}.json`; 
                 document.body.appendChild(a);
                 a.click();
@@ -1612,6 +1614,136 @@
                 displayMessage(`Error saving settings: ${error.message}`, 'error');
             }
         };
+
+        const resizeImageBase64 = (base64Str, targetWidth, targetHeight, preserveOriginal = false) => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    
+                    // The 'preserveOriginal' logic here is slightly adjusted for clarity in this context:
+                    // If preserveOriginal is true, it means we want to rescale it back to the original display size.
+                    // Otherwise, we are likely upscaling or simply drawing to the target dimensions.
+                    canvas.width = targetWidth;
+                    canvas.height = targetHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+                    
+                    const resizedBase64 = canvas.toDataURL('image/png').split(',')[1];
+                    resolve(resizedBase64);
+                };
+                img.onerror = (error) => reject(new Error('Failed to load image for resizing.'));
+                img.src = `data:image/png;base64,${base64Str}`;
+            });
+        };
+
+        /**
+         * Executes a single image generation pass against the Imagine server.
+         * Handles streaming, updates UI, and returns the final base64 image data of the pass.
+         * @param {object} payload - The JSON payload for the /generate request.
+         * @param {number} passNumber - Current pass number (e.g., 1 for initial, 2 for hires.fix).
+         * @param {number} totalPasses - Total number of passes (1 or 2).
+         * @param {AbortSignal} signal - Abort signal for cancellation.
+         * @param {number} displayWidth - The target width for displaying images (intermediate and final) from this pass.
+         * @param {number} displayHeight - The target height for displaying images (intermediate and final) from this pass.
+         * @returns {Promise<string|null>} Resolves with the base64 image string of the final image generated by the server for this pass, or null if no image was generated.
+         */
+        const executeGenerationPass = async (payload, passNumber, totalPasses, signal, displayWidth, displayHeight) => {
+            displayMessage(`Generating image (pass ${passNumber}/${totalPasses})...`, 'info', 2000);
+            showGeneratingStateNoImage(`Generating pass ${passNumber}/${totalPasses}...`); 
+            aboveImageStatusText.textContent = `Generating pass ${passNumber}/${totalPasses} (step ${currentStep}/${payload.steps || 0})...`;
+            currentStep = 0; 
+
+            Object.keys(payload).forEach(key => { 
+                if (payload[key] === undefined) {
+                    delete payload[key];
+                }
+            });
+
+            const response = await fetch(`${serverAddressInput.value.trim()}/generate`, { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: signal 
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
+                throw new Error(`HTTP Error: ${response.status} - ${errorData.message || response.statusText}`);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let buffer = '';
+            const totalSteps = parseInt(payload.steps) || 0;
+            let lastServerImageData = null; // To hold the final image received from server for this pass (potentially upscaled)
+            let lastSeed = null; 
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+
+                const lines = buffer.split('\n');
+                buffer = lines.pop(); 
+
+                for (const line of lines) {
+                    if (line.trim()) {
+                        try {
+                            let jsonString = line.trim();
+                            if (jsonString.startsWith('data: ')) { jsonString = jsonString.substring(6); } 
+                            const data = JSON.parse(jsonString);
+
+                            if (data.img) {
+                                currentStep++; 
+                                lastServerImageData = data.img; // Capture the raw image from the server
+
+                                // Apply downscale only if it's the second pass (hires.fix)
+                                if (passNumber === 2 && displayWidth && displayHeight) {
+                                    const displayedImageBase64 = await resizeImageBase64(lastServerImageData, displayWidth, displayHeight, true);
+                                    generatedImage.src = IMAGE_DATA_PREFIX + displayedImageBase64; 
+                                } else {
+                                    generatedImage.src = IMAGE_DATA_PREFIX + lastServerImageData; 
+                                }
+                                showGeneratingStateWithImage(`Generating pass ${passNumber}/${totalPasses} (step ${currentStep}/${totalSteps})...`); 
+                            }
+                            if (data.seed) { lastSeed = data.seed; } 
+                        } catch (parseError) {
+                            console.warn(`Error parsing JSON from stream (pass ${passNumber}):`, parseError, 'Line:', line);
+                        }
+                    }
+                }
+            }
+            // Process any remaining buffer for the very last part of the response (final JSON object)
+            if (buffer.trim()) {
+                try {
+                    let jsonString = buffer.trim();
+                    if (jsonString.startsWith('data: ')) { jsonString = jsonString.substring(6); }
+                    const data = JSON.parse(jsonString);
+                    if (data.img) {
+                        lastServerImageData = data.img; // Capture the raw final image from the server
+                        // Apply downscale only if it's the second pass (hires.fix)
+                        if (passNumber === 2 && displayWidth && displayHeight) {
+                            const displayedImageBase64 = await resizeImageBase64(lastServerImageData, displayWidth, displayHeight, true);
+                            generatedImage.src = IMAGE_DATA_PREFIX + displayedImageBase64; 
+                        } else {
+                            generatedImage.src = IMAGE_DATA_PREFIX + lastServerImageData; 
+                        }
+                    }
+                    if (data.seed) { lastSeed = data.seed; }
+                } catch (parseError) {
+                    console.warn(`Error parsing remaining JSON buffer (pass ${passNumber}):`, parseError, 'Buffer:', buffer);
+                }
+            }
+
+            if (lastSeed) {
+                finalSeed = lastSeed; // Update the global finalSeed for the whole process
+            }
+
+            return lastServerImageData; // Return the raw (potentially upscaled) image data from server for next pass
+        }
+
 
         // --- Form Submission Handler / Stop Button Handler ---
         const handleFormSubmit = async (event) => {
@@ -1629,189 +1761,110 @@
             saveSettings(); 
             clearMessages(); 
             
-            // --- NEW VALIDATION: Check for selected model and prompt ---
+            // --- VALIDATION ---
             const serverUrl = serverAddressInput.value.trim();
             if (!serverUrl) {
                 displayMessage('Error: Server address cannot be empty.', 'error');
-                return; // Do not proceed
+                return; 
             }
 
             const prompt = promptInput.value.trim();
             if (!prompt) {
                 displayMessage('Error: Prompt cannot be empty.', 'error');
-                return; // Do not proceed
+                return; 
             }
 
-            if (!currentModelServerPath) { // Check if a model is selected
+            if (!currentModelServerPath) { 
                 displayMessage('Error: Please select a model from the list.', 'error');
-                return; // Do not proceed
+                return; 
             }
-            // --- END NEW VALIDATION ---
+            // --- END VALIDATION ---
 
 
-            setGeneratingState(true); // Start generating state here
-            
-            // Set initial generation state (before image arrives)
-            resetImageDisplayState(); // Clear any previous image
-            showGeneratingStateNoImage(); // Set generating state
+            setGeneratingState(true); 
+            resetImageDisplayState();
+            showGeneratingStateNoImage('Generating image...'); 
             
             currentStep = 0; 
 
             currentAbortController = new AbortController();
             const signal = currentAbortController.signal;
 
-            const payload = {
+            const originalPayload = {
                 prompt: prompt,
-                model: currentModelServerPath, // Now `currentModelServerPath` holds the model name, which is guaranteed to be non-empty by validation
+                model: currentModelServerPath,
                 neg: negativePromptInput.value.trim() || undefined,
                 width: parseInt(widthInput.value) || 512,
                 height: parseInt(heightInput.value) || 512,
                 steps: parseInt(numStepsInput.value) || 25,
                 guidance: parseFloat(guidanceInput.value) || 7.0,
                 sampler: samplerInput.value || 'dpm++ 2m',
-                // Updated: Convert seed to string if it exists, as per the user's updated understanding
                 seed: seedInput.value ? String(seedInput.value) : undefined, 
                 stream: parseInt(streamInput.value) || undefined,
-                clip: clipSkipInput.value ? parseInt(clipSkipInput.value) : undefined // NEW: Add clipSkip to payload
+                clip: clipSkipInput.value ? parseInt(clipSkipInput.value) : undefined
             };
 
-            // Add logging for sent dimensions
-            console.log(`[UI DEBUG] Sending to server: width=${payload.width}, height=${payload.height}`);
+            const hiresScale = parseFloat(hiresScaleInput.value);
+            const applyHiresFix = !base64ImageInput.value && hiresScale && hiresScale > 1.0;
 
-
-            if (base64ImageInput.value) {
-                // Remove the 'data:image/png;base64,' prefix from the Base64 string
-                let cleanBase64 = base64ImageInput.value;
-                if (cleanBase64.startsWith(IMAGE_DATA_PREFIX)) {
-                    cleanBase64 = cleanBase64.substring(IMAGE_DATA_PREFIX.length);
-                }
-                payload.img = cleanBase64;
-                payload.strength = parseFloat(strengthInput.value) || 0.8;
-            }
-
-            // Clean up undefined values from payload for cleaner JSON (though server should handle it)
-            Object.keys(payload).forEach(key => {
-                if (payload[key] === undefined) {
-                    delete payload[key];
-                }
-            });
+            let finalSeed = ''; // Global variable updated by executeGenerationPass
 
             try {
-                const response = await fetch(`${serverUrl}/generate`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload),
-                    signal: signal 
-                });
+                let currentImageBase64 = null; 
+                
+                const totalPasses = applyHiresFix ? 2 : 1;
 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
-                    throw new Error(`HTTP Error: ${response.status} - ${errorData.message || response.statusText}`);
+                // --- FIRST GENERATION PASS (TXT2IMG or initial IMG2IMG) ---
+                const firstPassPayload = { ...originalPayload }; 
+                if (base64ImageInput.value) { 
+                    let cleanBase64 = base64ImageInput.value;
+                    if (cleanBase64.startsWith(IMAGE_DATA_PREFIX)) {
+                        cleanBase64 = cleanBase64.substring(IMAGE_DATA_PREFIX.length);
+                    }
+                    firstPassPayload.img = cleanBase64;
+                    firstPassPayload.strength = parseFloat(strengthInput.value) || 0.8;
                 }
 
-                if (payload.stream && payload.stream > 0) {
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder('utf-8');
-                    let buffer = '';
+                // Pass original width/height as display dimensions for the first pass (no downscaling needed)
+                currentImageBase64 = await executeGenerationPass(firstPassPayload, 1, totalPasses, signal, originalPayload.width, originalPayload.height);
 
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) break;
+                if (!currentImageBase64) {
+                    if (!signal.aborted) { 
+                        throw new Error('Initial image generation failed to return an image.');
+                    }
+                    return; 
+                }
 
-                        buffer += decoder.decode(value, { stream: true });
+                // --- SECOND GENERATION PASS (HIRES FIX) ---
+                if (applyHiresFix) { 
+                    const upscaledWidth = Math.floor(originalPayload.width * hiresScale);
+                    const upscaledHeight = Math.floor(originalPayload.height * hiresScale);
 
-                        const lines = buffer.split('\n');
-                        buffer = lines.pop();
+                    const upscaledImageBase64 = await resizeImageBase64(currentImageBase64, upscaledWidth, upscaledHeight);
 
-                        for (const line of lines) {
-                            if (line.trim()) {
-                                try {
-                                    let jsonString = line.trim();
-                                    if (jsonString.startsWith('data: ')) {
-                                        jsonString = jsonString.substring(6);
-                                    }
-                                    const data = JSON.parse(jsonString);
+                    const hiresFixPayload = {
+                        ...originalPayload, 
+                        img: upscaledImageBase64, 
+                        width: upscaledWidth,    
+                        height: upscaledHeight,
+                        strength: 0.35, 
+                        stream: originalPayload.stream 
+                    };
 
-                                    if (data.img) {
-                                        currentStep++; 
-                                        const imageUrl = IMAGE_DATA_PREFIX + data.img;
-                                        generatedImage.src = imageUrl; 
-                                        showGeneratingStateWithImage(); 
-                                        const totalSteps = parseInt(numStepsInput.value) || 0;
-                                        displayMessage(`Generating image (step ${currentStep}/${totalSteps})...`, 'info', 1500); 
+                    // Pass original width/height as display dimensions for the second pass (downscaling needed)
+                    let secondPassServerImageBase64 = await executeGenerationPass(hiresFixPayload, 2, totalPasses, signal, originalPayload.width, originalPayload.height);
 
-                                        // Add logging for dimensions after image load
-                                        generatedImage.onload = () => {
-                                            console.log(`[UI DEBUG] Streamed image dimensions: ${generatedImage.naturalWidth}x${generatedImage.naturalHeight}`);
-                                        };
-                                        generatedImage.onerror = () => {
-                                            console.error(`[UI DEBUG] Error loading streamed image.`);
-                                        };
-
-                                    }
-                                    if (data.seed && finalSeedDisplay) { // Check finalSeedDisplay
-                                        finalSeedDisplay.querySelector('span').textContent = data.seed;
-                                    }
-                                } catch (parseError) {
-                                    console.warn('Error parsing JSON from stream:', parseError, 'Line:', line);
-                                }
-                            }
+                    if (!secondPassServerImageBase64) {
+                        if (!signal.aborted) {
+                            throw new Error('Hires Fix pass failed to return an image.');
                         }
+                        return; 
                     }
+                } 
 
-                    if (buffer.trim()) {
-                         try {
-                            let jsonString = buffer.trim();
-                            if (jsonString.startsWith('data: ')) {
-                                jsonString = jsonString.substring(6);
-                            }
-                            const data = JSON.parse(jsonString);
-
-                            if (data.img) {
-                                const imageUrl = IMAGE_DATA_PREFIX + data.img;
-                                generatedImage.src = imageUrl;
-                                // Add logging for dimensions after loading the last image in the stream
-                                generatedImage.onload = () => {
-                                    console.log(`[UI DEBUG] Final streamed image dimensions: ${generatedImage.naturalWidth}x${generatedImage.naturalHeight}`);
-                                };
-                                generatedImage.onerror = () => {
-                                    console.error(`[UI DEBUG] Error loading final streamed image.`);
-                                };
-                            }
-                            if (data.seed && finalSeedDisplay) { // Check finalSeedDisplay
-                                finalSeedDisplay.querySelector('span').textContent = data.seed;
-                            }
-                        } catch (parseError) {
-                            console.warn('Error parsing remaining JSON buffer:', parseError, 'Buffer:', buffer);
-                        }
-                    }
-
-                    displayMessage('Generation complete. Image displayed.', 'success');
-
-                } else { 
-                    const result = await response.json();
-                    if (result.img) {
-                        const imageUrl = IMAGE_DATA_PREFIX + result.img;
-                        generatedImage.src = imageUrl;
-                        showGeneratingStateWithImage(); 
-                        displayMessage('Image generated successfully!', 'success');
-                        
-                        // Add logging for dimensions after image load (non-streaming mode)
-                        generatedImage.onload = () => {
-                            console.log(`[UI DEBUG] Received image dimensions: ${generatedImage.naturalWidth}x${generatedImage.naturalHeight}`);
-                        };
-                        generatedImage.onerror = () => {
-                            console.error(`[UI DEBUG] Error loading image.`);
-                        };
-
-                    } else {
-                        displayMessage('Server returned empty or invalid response.', 'error');
-                    }
-                    if (result.seed && finalSeedDisplay) { // Check finalSeedDisplay
-                        finalSeedDisplay.querySelector('span').textContent = result.seed;
-                    }
+                displayMessage('Generation complete. Image displayed.', 'success');
+                if (finalSeedDisplay) {
+                    finalSeedDisplay.querySelector('span').textContent = finalSeed;
                 }
 
             } catch (error) {
@@ -1820,8 +1873,7 @@
                 } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
                     console.error('Image generation error: Failed to connect to server.', error);
                     displayMessage('Generation error: Failed to connect to Imagine server. Check server address and ensure it is running and accessible. CORS might need configuration.', 'error', 7000);
-                }
-                else {
+                } else {
                     console.error('Image generation error:', error);
                     displayMessage(`Generation error: ${error.message}`, 'error');
                 }
@@ -1831,8 +1883,7 @@
             }
         };
 
-        // Load settings and initialize elements on page load
-        document.addEventListener('DOMContentLoaded', () => { // Changed from window.onload
+        document.addEventListener('DOMContentLoaded', () => { 
             initializeDOMElements(); 
             loadSettings(); 
         });

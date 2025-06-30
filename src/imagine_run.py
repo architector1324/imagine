@@ -87,6 +87,8 @@ def run(args):
 
         # high resolution fix
         if args.hires and not args.img:
+            meta['meta']['hires'] = args.hires
+
             w = int(args.width * args.hires)
             h = int(args.height * args.hires)
 
