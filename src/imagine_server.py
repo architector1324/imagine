@@ -65,7 +65,7 @@ def run_pipe(prompt, width, height, steps, guidance, strength, clip_skip, neg_pr
             num_inference_steps=steps,
             guidance_scale=guidance,
             strength=strength,
-            clip_skip=clip_skip,
+            clip_skip=max(clip_skip - 1, 0),
             negative_prompt=neg_prompt,
             image=img,
             generator=gen,
@@ -147,6 +147,10 @@ def generate_image_logic(data):
     pipe.scheduler = SAMPLERS[sampler].from_config(pipe.scheduler.config)
     pipe.safety_checker = lambda images, clip_input: (images, None) # Disable safety checker
     pipe.to(dev, fp_prec)
+
+    pipe.unet.to(fp_prec)
+    pipe.vae.to(fp_prec)
+    pipe.text_encoder.to(fp_prec)
 
     # init generator
     gen = torch.Generator(dev).manual_seed(seed)
@@ -381,7 +385,7 @@ def serve(args):
     global models_path
 
     dev = args.device
-    fp_prec = torch.float32 if args.full_prec else torch.float16
+    fp_prec = torch.float32 if args.full_prec else (torch.bfloat16 if args.device == 'cpu' else torch.float16)
     models_path = args.models
 
     server_address = (args.host, args.port)
