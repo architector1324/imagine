@@ -467,6 +467,24 @@
             z-index: 20;
         }
 
+        /* Progress Bar Styling */
+        #progressBarContainer {
+            background-color: var(--input-bg);
+            border: 1px solid var(--primary-border);
+            position: relative; /* For absolute positioning of text */
+            height: 2.5rem; /* Increased height to 2.5rem (equivalent to h-10 in Tailwind) */
+        }
+
+        #progressBar {
+            background: linear-gradient(90deg, var(--primary-btn-start), var(--primary-btn-end));
+            transition: width 0.1s ease-linear; /* Faster transition for step updates */
+        }
+
+        #progressText {
+            color: white;
+            text-shadow: 0 0 3px rgba(0,0,0,0.5); /* Make text readable on gradient */
+        }
+
         /* Override Tailwind classes for specific elements to match the palette */
         .text-gray-300 {
             color: var(--primary-text);
@@ -781,8 +799,16 @@
                     <!-- Removed src and hidden class, visibility controlled by JS -->
                     <img id="generatedImage" class="max-w-full max-h-full w-full h-full object-contain relative z-5" alt="Generated image" />
                 </div>
-                <!-- Moved outside imageFrame, hidden class removed, now managed by JS -->
-                <p id="finalSeed" class="text-sm mt-4" style="color: var(--primary-text);">Сид: <span class="font-mono" style="color: var(--input-text);"></span></p>
+
+                <!-- UPDATED: Seed moved here, now above the progress bar -->
+                <p id="finalSeed" class="text-sm mt-4" style="color: var(--primary-text); display: none;">Сид: <span class="font-mono" style="color: var(--input-text);"></span></p>
+
+                <!-- Progress Bar Container -->
+                <div id="progressBarContainer" class="w-full rounded-full mt-2 overflow-hidden relative transition-opacity duration-300 ease-in-out opacity-0" style="display: none; height: 2.5rem;">
+                    <div id="progressBar" class="h-full rounded-full transition-all duration-100 ease-linear" style="background: linear-gradient(90deg, var(--primary-btn-start), var(--primary-btn-end)); width: 0%;"></div>
+                    <div id="progressText" class="absolute inset-0 flex items-center justify-center text-sm font-semibold text-white" style="text-shadow: 0 0 3px rgba(0,0,0,0.5);"></div>
+                </div>
+                <!-- END Progress Bar Container -->
                 
                 <!-- START: Prompts - Moved block below the image, now collapsible -->
                 <div class="collapsible-container w-full mt-8">
@@ -799,7 +825,7 @@
                                 id="prompt"
                                 rows="4"
                                 class="w-full form-input-dark"
-                                placeholder="e.g.: a photo of an astronaut riding a horse on mars, epic, cinematic, detailed"
+                                placeholder="напр.: a photo of an astronaut riding a horse on mars, epic, cinematic, detailed"
                                 required
                             ></textarea>
                         </div>
@@ -811,7 +837,7 @@
                                 id="negativePrompt"
                                 rows="3"
                                 class="w-full form-input-dark"
-                                placeholder="e.g.: ugly, deformed, blurry, low quality"
+                                placeholder="напр.: ugly, deformed, blurry, low quality"
                             ></textarea>
                         </div>
                     </div>
@@ -880,6 +906,11 @@
         let generatedImage; 
         let finalSeedDisplay; 
 
+        // Progress Bar Elements
+        let progressBarContainer;
+        let progressBar;
+        let progressText;
+
         // New elements for model selection
         let modelSelect;
         let modelStatusText;
@@ -901,7 +932,7 @@
 
         let currentModelServerPath = ''; 
         let messageTimeoutId = null; 
-        let currentStep = 0; 
+        let currentStep = 0; // Current step for the progress bar
 
         // Function to initialize DOM elements once the document is ready
         const initializeDOMElements = () => {
@@ -933,6 +964,11 @@
             placeholderTextOverlay = document.getElementById('placeholderTextOverlay');
             generatedImage = document.getElementById('generatedImage');
             finalSeedDisplay = document.getElementById('finalSeed'); 
+
+            // Progress Bar Elements
+            progressBarContainer = document.getElementById('progressBarContainer');
+            progressBar = document.getElementById('progressBar');
+            progressText = document.getElementById('progressText');
 
             // New model selection elements
             modelSelect = document.getElementById('modelSelect');
@@ -1001,6 +1037,9 @@
             floatingMessageContainer.style.display = 'none';
             aboveImageStatusText.style.display = 'none';
             resetConfirmModal.style.display = 'none'; // Ensure reset modal is hidden initially
+            progressBarContainer.style.opacity = '0'; // Hide progress bar initially with opacity
+            progressBarContainer.style.display = 'none'; // And also with display none
+
 
             resetImageDisplayState();
 
@@ -1125,7 +1164,7 @@
             aboveImageStatusText.classList.remove('fade-animation'); 
             if (finalSeedDisplay) { 
                 finalSeedDisplay.querySelector('span').textContent = ''; 
-                finalSeedDisplay.style.display = 'none'; 
+                finalSeedDisplay.style.display = 'none'; // Ensure seed is hidden
             }
         };
 
@@ -1137,9 +1176,6 @@
             placeholderTextOverlay.classList.add('fade-animation'); 
             aboveImageStatusText.style.display = 'none'; 
             aboveImageStatusText.classList.remove('fade-animation'); 
-            if (finalSeedDisplay) {
-                finalSeedDisplay.style.display = 'none'; 
-            }
         };
 
         const showGeneratingStateWithImage = (statusText = '') => {
@@ -1149,9 +1185,6 @@
             aboveImageStatusText.textContent = statusText; 
             aboveImageStatusText.style.display = 'block'; 
             aboveImageStatusText.classList.add('fade-animation'); 
-            if (finalSeedDisplay) {
-                finalSeedDisplay.style.display = 'none'; 
-            }
         };
 
         const hideAllGenerationStatus = () => {
@@ -1381,6 +1414,15 @@
                 
                 showGeneratingStateNoImage();
 
+                // Show progress bar
+                progressBarContainer.style.display = 'block';
+                setTimeout(() => { // Small delay to allow display:block to apply before transition
+                    progressBarContainer.style.opacity = '1';
+                }, 10);
+                progressBar.style.width = '0%';
+                progressText.textContent = '0%';
+                // Seed display is handled by executeGenerationPass for immediate update
+                // finalSeedDisplay.style.display is not touched here, as it can be set by the stream data
             } else {
                 generateButton.textContent = 'Сгенерировать'; 
                 generateButton.classList.remove('btn-stop');
@@ -1402,13 +1444,19 @@
                 hideAllGenerationStatus();
                 if (generatedImage.src && generatedImage.src !== '') { 
                      generatedImage.style.display = 'block'; 
-                     if (finalSeedDisplay) {
-                        finalSeedDisplay.style.display = 'block'; 
-                     }
+                     // Seed display should remain visible if it was set during generation
                 } else {
                     resetImageDisplayState(); 
                 }
                 updateGenerateButtonState(); 
+
+                // Hide progress bar
+                progressBarContainer.style.opacity = '0';
+                setTimeout(() => { // Hide after fade out
+                    progressBarContainer.style.display = 'none';
+                    progressBar.style.width = '0%'; // Reset for next time
+                    progressText.textContent = ''; // Reset for next time
+                }, 300); // Match CSS transition duration
             }
         };
 
@@ -1633,7 +1681,7 @@
                     resolve(resizedBase64);
                 };
                 img.onerror = (error) => reject(new Error('Failed to load image for resizing.'));
-                img.src = `data:image/png;base64,${base64Str}`;
+                img.src = `data:image/png;base64,${base64Str}`; 
             });
         };
 
@@ -1646,15 +1694,20 @@
          * @param {AbortSignal} signal - Abort signal for cancellation.
          * @param {number} displayWidth - The target width for displaying images (intermediate and final) from this pass.
          * @param {number} displayHeight - The target height for displaying images (intermediate and final) from this pass.
-         * @returns {Promise<string|null>} Resolves with the base64 image string of the final image generated by the server for this pass, or null if no image was generated.
+         * @returns {Promise<{img: string|null, seed: string|null}>} Resolves with an object containing base64 image string and seed from the final step of this pass.
          */
         const executeGenerationPass = async (payload, passNumber, totalPasses, signal, displayWidth, displayHeight) => {
             displayMessage(`Генерация изображения (проход ${passNumber}/${totalPasses})...`, 'info', 2000);
-            showGeneratingStateNoImage(`Генерация прохода ${passNumber}/${totalPasses}...`); 
-            aboveImageStatusText.textContent = `Генерация прохода ${passNumber}/${totalPasses} (шаг ${currentStep}/${payload.steps || 0})...`;
-            currentStep = 0; // Reset step counter for each pass
+            
+            // Construct status text conditionally based on totalPasses
+            let statusPrefix = 'Генерация';
+            if (totalPasses > 1) {
+                statusPrefix += ` прохода ${passNumber}/${totalPasses}`;
+            }
 
-            // Clean up undefined values from payload for cleaner JSON (though server should handle it)
+            showGeneratingStateNoImage(`${statusPrefix}...`); 
+            currentStep = 0; // Reset step counter for this pass
+
             Object.keys(payload).forEach(key => { 
                 if (payload[key] === undefined) {
                     delete payload[key];
@@ -1665,11 +1718,11 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
-                signal: signal // Pass the abort signal
+                signal: signal 
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
+                const errorData = await response.json().catch(() => ({ message: 'Неизвестная ошибка сервера' }));
                 throw new Error(`HTTP Ошибка: ${response.status} - ${errorData.message || response.statusText}`);
             }
 
@@ -1677,8 +1730,8 @@
             const decoder = new TextDecoder('utf-8');
             let buffer = '';
             const totalSteps = parseInt(payload.steps) || 0;
-            let lastServerImageData = null; // To hold the final image received from server for this pass (potentially upscaled)
-            let lastSeed = null; // To capture seed from current pass
+            let lastServerImageData = null; // To hold the raw image received from server for this pass
+            let lastSeed = null; // To hold the seed from the last received data
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -1687,31 +1740,43 @@
                 buffer += decoder.decode(value, { stream: true });
 
                 const lines = buffer.split('\n');
-                buffer = lines.pop(); // Keep the last (incomplete) line in the buffer
+                buffer = lines.pop(); 
 
                 for (const line of lines) {
                     if (line.trim()) {
                         try {
                             let jsonString = line.trim();
-                            if (jsonString.startsWith('data: ')) { jsonString = jsonString.substring(6); } // Remove "data: " prefix if present
+                            if (jsonString.startsWith('data: ')) { jsonString = jsonString.substring(6); } 
                             const data = JSON.parse(jsonString);
 
                             if (data.img) {
-                                currentStep++; // Increment step for streamed images
+                                currentStep++; 
                                 lastServerImageData = data.img; // Capture the raw image from the server
 
-                                // Apply downscale only if it's the second pass (hires.fix) AND display dimensions are specified
+                                // Apply downscale only if it's the second pass (hires.fix)
                                 if (passNumber === 2 && displayWidth && displayHeight) {
                                     const displayedImageBase64 = await resizeImageBase64(lastServerImageData, displayWidth, displayHeight, true);
                                     generatedImage.src = IMAGE_DATA_PREFIX + displayedImageBase64; 
                                 } else {
                                     generatedImage.src = IMAGE_DATA_PREFIX + lastServerImageData; 
                                 }
-                                showGeneratingStateWithImage(`Генерация прохода ${passNumber}/${totalPasses} (шаг ${currentStep}/${totalSteps})...`); 
+                                showGeneratingStateWithImage(`${statusPrefix} (шаг ${currentStep}/${totalSteps})...`); 
+                                
+                                // Update progress bar
+                                const percentage = totalSteps > 0 ? Math.round((currentStep / totalSteps) * 100) : 0;
+                                progressBar.style.width = `${percentage}%`;
+                                progressText.textContent = `${percentage}%`;
                             }
-                            if (data.seed) { lastSeed = data.seed; } // Capture seed from any response part
+                            if (data.seed) { 
+                                lastSeed = data.seed; 
+                                // Update seed display immediately
+                                if (finalSeedDisplay) {
+                                    finalSeedDisplay.querySelector('span').textContent = lastSeed;
+                                    finalSeedDisplay.style.display = 'block'; // Ensure seed is visible
+                                }
+                            } 
                         } catch (parseError) {
-                            console.warn(`Error parsing JSON from stream (pass ${passNumber}):`, parseError, 'Line:', line);
+                            console.warn(`Ошибка при разборе JSON из потока (проход ${passNumber}):`, parseError, 'Строка:', line);
                         }
                     }
                 }
@@ -1724,25 +1789,31 @@
                     const data = JSON.parse(jsonString);
                     if (data.img) {
                         lastServerImageData = data.img; // Capture the raw final image from the server
-                        // Apply downscale only if it's the second pass (hires.fix) AND display dimensions are specified
+                        // Apply downscale only if it's the second pass (hires.fix)
                         if (passNumber === 2 && displayWidth && displayHeight) {
                             const displayedImageBase64 = await resizeImageBase64(lastServerImageData, displayWidth, displayHeight, true);
                             generatedImage.src = IMAGE_DATA_PREFIX + displayedImageBase64; 
                         } else {
                             generatedImage.src = IMAGE_DATA_PREFIX + lastServerImageData; 
                         }
+                        // Ensure progress bar shows 100% at the end of the pass
+                        progressBar.style.width = '100%';
+                        progressText.textContent = '100%';
                     }
-                    if (data.seed) { lastSeed = data.seed; } // Capture final seed
+                    if (data.seed) { 
+                        lastSeed = data.seed; 
+                        // Update seed display immediately for final data too
+                        if (finalSeedDisplay) {
+                            finalSeedDisplay.querySelector('span').textContent = lastSeed;
+                            finalSeedDisplay.style.display = 'block'; // Ensure seed is visible
+                        }
+                    }
                 } catch (parseError) {
-                    console.warn(`Error parsing remaining JSON buffer (pass ${passNumber}):`, parseError, 'Buffer:', buffer);
+                    console.warn(`Ошибка при разборе оставшегося JSON буфера (проход ${passNumber}):`, parseError, 'Буфер:', buffer);
                 }
             }
 
-            if (lastSeed) {
-                finalSeed = lastSeed; // Update the global finalSeed for the whole process
-            }
-
-            return lastServerImageData; // Return the raw (potentially upscaled) image data from server for next pass
+            return { img: lastServerImageData, seed: lastSeed }; // Return an object with img and seed
         }
 
 
@@ -1754,25 +1825,25 @@
                 if (currentAbortController) {
                     currentAbortController.abort();
                     displayMessage('Генерация отменена пользователем.', 'info');
-                    setGeneratingState(false); // Reset UI state on abort
+                    setGeneratingState(false); 
                 }
-                return; // Exit if already generating and stop button clicked
+                return; 
             }
 
-            saveSettings(); // Save current UI settings before starting generation
-            clearMessages(); // Clear any existing floating messages
+            saveSettings(); 
+            clearMessages(); 
             
             // --- VALIDATION ---
             const serverUrl = serverAddressInput.value.trim();
             if (!serverUrl) {
                 displayMessage('Ошибка: Адрес сервера не может быть пустым.', 'error');
-                return; // Do not proceed
+                return; 
             }
 
             const prompt = promptInput.value.trim();
             if (!prompt) {
                 displayMessage('Ошибка: Промпт не может быть пустым.', 'error');
-                return; // Do not proceed
+                return; 
             }
 
             if (!currentModelServerPath) { 
@@ -1782,16 +1853,15 @@
             // --- END VALIDATION ---
 
 
-            setGeneratingState(true); // Set UI to generating state
-            resetImageDisplayState(); // Clear any previous image
-            showGeneratingStateNoImage('Генерация изображения...'); // Show initial status
+            setGeneratingState(true); 
+            resetImageDisplayState();
+            showGeneratingStateNoImage('Генерация изображения...'); 
             
-            currentStep = 0; // Reset step counter
+            currentStep = 0; 
 
             currentAbortController = new AbortController();
             const signal = currentAbortController.signal;
 
-            // Construct the base payload from UI inputs
             const originalPayload = {
                 prompt: prompt,
                 model: currentModelServerPath,
@@ -1807,19 +1877,18 @@
             };
 
             const hiresScale = parseFloat(hiresScaleInput.value);
-            // Hires fix applies only to txt2img (no input image) and if scale > 1
             const applyHiresFix = !base64ImageInput.value && hiresScale && hiresScale > 1.0;
 
-            let finalSeed = ''; // This will store the final seed used for the *entire* generation process
+            let finalSeed = ''; // Local variable to hold the final seed for display
 
             try {
-                let currentImageBase64 = null; // Will hold the image result of each pass (Base64 without prefix)
+                let currentImageBase64 = null; 
                 
                 const totalPasses = applyHiresFix ? 2 : 1;
 
                 // --- FIRST GENERATION PASS (TXT2IMG or initial IMG2IMG) ---
-                const firstPassPayload = { ...originalPayload }; // Clone original payload
-                if (base64ImageInput.value) { // If an input image is provided, it's img2img
+                const firstPassPayload = { ...originalPayload }; 
+                if (base64ImageInput.value) { 
                     let cleanBase64 = base64ImageInput.value;
                     if (cleanBase64.startsWith(IMAGE_DATA_PREFIX)) {
                         cleanBase64 = cleanBase64.substring(IMAGE_DATA_PREFIX.length);
@@ -1828,63 +1897,63 @@
                     firstPassPayload.strength = parseFloat(strengthInput.value) || 0.8;
                 }
 
-                // For the first pass, we want to display images at their generated resolution
-                currentImageBase64 = await executeGenerationPass(firstPassPayload, 1, totalPasses, signal, originalPayload.width, originalPayload.height);
+                const firstPassResult = await executeGenerationPass(firstPassPayload, 1, totalPasses, signal, originalPayload.width, originalPayload.height);
+                currentImageBase64 = firstPassResult.img;
+                finalSeed = firstPassResult.seed || ''; // Capture seed from first pass
 
                 if (!currentImageBase64) {
-                    if (!signal.aborted) { // Only throw if not aborted by user
-                        throw new Error('Initial image generation failed to return an image.');
+                    if (!signal.aborted) { 
+                        throw new Error('Первичная генерация изображения не вернула изображение.');
                     }
-                    return; // Exit if aborted
+                    return; 
                 }
 
                 // --- SECOND GENERATION PASS (HIRES FIX) ---
-                if (applyHiresFix) { // If hires fix is enabled and applicable (txt2img only)
+                if (applyHiresFix) { 
                     const upscaledWidth = Math.floor(originalPayload.width * hiresScale);
                     const upscaledHeight = Math.floor(originalPayload.height * hiresScale);
 
-                    // Upscale the image on the client side before sending it back to the server as img2img input
                     const upscaledImageBase64 = await resizeImageBase64(currentImageBase64, upscaledWidth, upscaledHeight);
 
                     const hiresFixPayload = {
-                        ...originalPayload, // Inherit all original parameters
-                        img: upscaledImageBase64, // Use the upscaled image as input
-                        width: upscaledWidth,    // Set new target width
-                        height: upscaledHeight,  // Set new target height
-                        strength: 0.35,          // Fixed denoising strength for hires fix
-                        stream: originalPayload.stream // Keep streaming setting
+                        ...originalPayload, 
+                        img: upscaledImageBase64, 
+                        width: upscaledWidth,    
+                        height: upscaledHeight,
+                        strength: 0.35, 
+                        stream: originalPayload.stream 
                     };
 
-                    // For the second pass, we want to display images downscaled back to original dimensions
-                    let secondPassServerImageBase64 = await executeGenerationPass(hiresFixPayload, 2, totalPasses, signal, originalPayload.width, originalPayload.height);
-
-                    if (!secondPassServerImageBase64) {
+                    const secondPassResult = await executeGenerationPass(hiresFixPayload, 2, totalPasses, signal, originalPayload.width, originalPayload.height);
+                    finalSeed = secondPassResult.seed || finalSeed; 
+                    
+                    if (!secondPassResult.img) {
                         if (!signal.aborted) {
-                            throw new Error('Hires Fix pass failed to return an image.');
+                            throw new Error('Проход Hires Fix не вернул изображение.');
                         }
-                        return; // Exit if aborted
+                        return; 
                     }
-                    currentImageBase64 = secondPassServerImageBase64; // The final image from hires fix
                 } 
 
                 displayMessage('Генерация завершена. Изображение отображено.', 'success');
                 if (finalSeedDisplay) {
                     finalSeedDisplay.querySelector('span').textContent = finalSeed;
+                    finalSeedDisplay.style.display = 'block'; 
                 }
 
             } catch (error) {
                 if (error.name === 'AbortError') {
                     displayMessage('Генерация отменена пользователем.', 'info');
                 } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-                    console.error('Image generation error: Failed to connect to server.', error);
+                    console.error('Ошибка генерации изображения: Не удалось подключиться к серверу.', error);
                     displayMessage('Ошибка генерации: Не удалось подключиться к Imagine серверу. Проверьте адрес сервера и убедитесь, что он запущен и доступен. Возможно, потребуется настройка CORS.', 'error', 7000);
                 } else {
-                    console.error('Image generation error:', error);
+                    console.error('Ошибка генерации изображения:', error);
                     displayMessage(`Ошибка генерации: ${error.message}`, 'error');
                 }
             } finally {
-                setGeneratingState(false); // Reset UI state regardless of success or failure
-                currentAbortController = null; // Clear the controller
+                setGeneratingState(false); 
+                currentAbortController = null; 
             }
         };
 

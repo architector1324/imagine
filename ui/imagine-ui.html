@@ -467,6 +467,24 @@
             z-index: 20;
         }
 
+        /* Progress Bar Styling */
+        #progressBarContainer {
+            background-color: var(--input-bg);
+            border: 1px solid var(--primary-border);
+            position: relative; /* For absolute positioning of text */
+            height: 2rem; /* NEW: Increased height from 1.5rem to 2rem (equivalent to h-8 in Tailwind) */
+        }
+
+        #progressBar {
+            background: linear-gradient(90deg, var(--primary-btn-start), var(--primary-btn-end));
+            transition: width 0.1s ease-linear; /* Faster transition for step updates */
+        }
+
+        #progressText {
+            color: white;
+            text-shadow: 0 0 3px rgba(0,0,0,0.5); /* Make text readable on gradient */
+        }
+
         /* Override Tailwind classes for specific elements to match the palette */
         .text-gray-300 {
             color: var(--primary-text);
@@ -781,8 +799,16 @@
                     <!-- Removed src and hidden class, visibility controlled by JS -->
                     <img id="generatedImage" class="max-w-full max-h-full w-full h-full object-contain relative z-5" alt="Generated image" />
                 </div>
-                <!-- Moved outside imageFrame, hidden class removed, now managed by JS -->
-                <p id="finalSeed" class="text-sm mt-4" style="color: var(--primary-text);">Seed: <span class="font-mono" style="color: var(--input-text);"></span></p>
+
+                <!-- UPDATED: Seed moved here, now above the progress bar -->
+                <p id="finalSeed" class="text-sm mt-4" style="color: var(--primary-text); display: none;">Seed: <span class="font-mono" style="color: var(--input-text);"></span></p>
+
+                <!-- Progress Bar Container -->
+                <div id="progressBarContainer" class="w-full rounded-full mt-2 overflow-hidden relative transition-opacity duration-300 ease-in-out opacity-0" style="display: none; height: 2.5rem;">
+                    <div id="progressBar" class="h-full rounded-full transition-all duration-100 ease-linear" style="background: linear-gradient(90deg, var(--primary-btn-start), var(--primary-btn-end)); width: 0%;"></div>
+                    <div id="progressText" class="absolute inset-0 flex items-center justify-center text-sm font-semibold text-white" style="text-shadow: 0 0 3px rgba(0,0,0,0.5);"></div>
+                </div>
+                <!-- END NEW: Progress Bar Container -->
                 
                 <!-- START: Prompts - Moved block below the image, now collapsible -->
                 <div class="collapsible-container w-full mt-8">
@@ -880,6 +906,11 @@
         let generatedImage; 
         let finalSeedDisplay; 
 
+        // Progress Bar Elements
+        let progressBarContainer;
+        let progressBar;
+        let progressText;
+
         // New elements for model selection
         let modelSelect;
         let modelStatusText;
@@ -901,7 +932,7 @@
 
         let currentModelServerPath = ''; 
         let messageTimeoutId = null; 
-        let currentStep = 0; 
+        let currentStep = 0; // Current step for the progress bar
 
         // Function to initialize DOM elements once the document is ready
         const initializeDOMElements = () => {
@@ -933,6 +964,11 @@
             placeholderTextOverlay = document.getElementById('placeholderTextOverlay');
             generatedImage = document.getElementById('generatedImage');
             finalSeedDisplay = document.getElementById('finalSeed'); 
+
+            // Progress Bar Elements
+            progressBarContainer = document.getElementById('progressBarContainer');
+            progressBar = document.getElementById('progressBar');
+            progressText = document.getElementById('progressText');
 
             // New model selection elements
             modelSelect = document.getElementById('modelSelect');
@@ -1001,6 +1037,9 @@
             floatingMessageContainer.style.display = 'none';
             aboveImageStatusText.style.display = 'none';
             resetConfirmModal.style.display = 'none'; // Ensure reset modal is hidden initially
+            progressBarContainer.style.opacity = '0'; // Hide progress bar initially with opacity
+            progressBarContainer.style.display = 'none'; // And also with display none
+
 
             resetImageDisplayState();
 
@@ -1125,7 +1164,7 @@
             aboveImageStatusText.classList.remove('fade-animation'); 
             if (finalSeedDisplay) { 
                 finalSeedDisplay.querySelector('span').textContent = ''; 
-                finalSeedDisplay.style.display = 'none'; 
+                finalSeedDisplay.style.display = 'none'; // Ensure seed is hidden
             }
         };
 
@@ -1137,9 +1176,6 @@
             placeholderTextOverlay.classList.add('fade-animation'); 
             aboveImageStatusText.style.display = 'none'; 
             aboveImageStatusText.classList.remove('fade-animation'); 
-            if (finalSeedDisplay) {
-                finalSeedDisplay.style.display = 'none'; 
-            }
         };
 
         const showGeneratingStateWithImage = (statusText = '') => {
@@ -1149,9 +1185,6 @@
             aboveImageStatusText.textContent = statusText; 
             aboveImageStatusText.style.display = 'block'; 
             aboveImageStatusText.classList.add('fade-animation'); 
-            if (finalSeedDisplay) {
-                finalSeedDisplay.style.display = 'none'; 
-            }
         };
 
         const hideAllGenerationStatus = () => {
@@ -1381,6 +1414,15 @@
                 
                 showGeneratingStateNoImage();
 
+                // Show progress bar
+                progressBarContainer.style.display = 'block';
+                setTimeout(() => { // Small delay to allow display:block to apply before transition
+                    progressBarContainer.style.opacity = '1';
+                }, 10);
+                progressBar.style.width = '0%';
+                progressText.textContent = '0%';
+                // Seed display is handled by executeGenerationPass for immediate update
+                // No need to set finalSeedDisplay.style.display here as it can be set by the stream data
             } else {
                 generateButton.textContent = 'Generate'; 
                 generateButton.classList.remove('btn-stop');
@@ -1402,13 +1444,19 @@
                 hideAllGenerationStatus();
                 if (generatedImage.src && generatedImage.src !== '') { 
                      generatedImage.style.display = 'block'; 
-                     if (finalSeedDisplay) {
-                        finalSeedDisplay.style.display = 'block'; 
-                     }
+                     // Seed display should remain visible if it was set during generation
                 } else {
                     resetImageDisplayState(); 
                 }
                 updateGenerateButtonState(); 
+
+                // Hide progress bar
+                progressBarContainer.style.opacity = '0';
+                setTimeout(() => { // Hide after fade out
+                    progressBarContainer.style.display = 'none';
+                    progressBar.style.width = '0%'; // Reset for next time
+                    progressText.textContent = ''; // Reset for next time
+                }, 300); // Match CSS transition duration
             }
         };
 
@@ -1633,7 +1681,7 @@
                     resolve(resizedBase64);
                 };
                 img.onerror = (error) => reject(new Error('Failed to load image for resizing.'));
-                img.src = `data:image/png;base64,${base64Str}`;
+                img.src = `data:image/png;base64,${base64Str}`; 
             });
         };
 
@@ -1646,13 +1694,19 @@
          * @param {AbortSignal} signal - Abort signal for cancellation.
          * @param {number} displayWidth - The target width for displaying images (intermediate and final) from this pass.
          * @param {number} displayHeight - The target height for displaying images (intermediate and final) from this pass.
-         * @returns {Promise<string|null>} Resolves with the base64 image string of the final image generated by the server for this pass, or null if no image was generated.
+         * @returns {Promise<{img: string|null, seed: string|null}>} Resolves with an object containing base64 image string and seed from the final step of this pass.
          */
         const executeGenerationPass = async (payload, passNumber, totalPasses, signal, displayWidth, displayHeight) => {
             displayMessage(`Generating image (pass ${passNumber}/${totalPasses})...`, 'info', 2000);
-            showGeneratingStateNoImage(`Generating pass ${passNumber}/${totalPasses}...`); 
-            aboveImageStatusText.textContent = `Generating pass ${passNumber}/${totalPasses} (step ${currentStep}/${payload.steps || 0})...`;
-            currentStep = 0; 
+            
+            // Construct status text conditionally based on totalPasses
+            let statusPrefix = 'Generating';
+            if (totalPasses > 1) {
+                statusPrefix += ` pass ${passNumber}/${totalPasses}`;
+            }
+
+            showGeneratingStateNoImage(`${statusPrefix}...`); 
+            currentStep = 0; // Reset step counter for this pass
 
             Object.keys(payload).forEach(key => { 
                 if (payload[key] === undefined) {
@@ -1676,8 +1730,8 @@
             const decoder = new TextDecoder('utf-8');
             let buffer = '';
             const totalSteps = parseInt(payload.steps) || 0;
-            let lastServerImageData = null; // To hold the final image received from server for this pass (potentially upscaled)
-            let lastSeed = null; 
+            let lastServerImageData = null; // To hold the raw image received from server for this pass
+            let lastSeed = null; // To hold the seed from the last received data
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -1706,9 +1760,21 @@
                                 } else {
                                     generatedImage.src = IMAGE_DATA_PREFIX + lastServerImageData; 
                                 }
-                                showGeneratingStateWithImage(`Generating pass ${passNumber}/${totalPasses} (step ${currentStep}/${totalSteps})...`); 
+                                showGeneratingStateWithImage(`${statusPrefix} (step ${currentStep}/${totalSteps})...`); 
+                                
+                                // Update progress bar
+                                const percentage = totalSteps > 0 ? Math.round((currentStep / totalSteps) * 100) : 0;
+                                progressBar.style.width = `${percentage}%`;
+                                progressText.textContent = `${percentage}%`;
                             }
-                            if (data.seed) { lastSeed = data.seed; } 
+                            if (data.seed) { 
+                                lastSeed = data.seed; 
+                                // Update seed display immediately
+                                if (finalSeedDisplay) {
+                                    finalSeedDisplay.querySelector('span').textContent = lastSeed;
+                                    finalSeedDisplay.style.display = 'block'; // Ensure seed is visible
+                                }
+                            } 
                         } catch (parseError) {
                             console.warn(`Error parsing JSON from stream (pass ${passNumber}):`, parseError, 'Line:', line);
                         }
@@ -1730,18 +1796,24 @@
                         } else {
                             generatedImage.src = IMAGE_DATA_PREFIX + lastServerImageData; 
                         }
+                        // Ensure progress bar shows 100% at the end of the pass
+                        progressBar.style.width = '100%';
+                        progressText.textContent = '100%';
                     }
-                    if (data.seed) { lastSeed = data.seed; }
+                    if (data.seed) { 
+                        lastSeed = data.seed; 
+                        // Update seed display immediately for final data too
+                        if (finalSeedDisplay) {
+                            finalSeedDisplay.querySelector('span').textContent = lastSeed;
+                            finalSeedDisplay.style.display = 'block'; // Ensure seed is visible
+                        }
+                    }
                 } catch (parseError) {
                     console.warn(`Error parsing remaining JSON buffer (pass ${passNumber}):`, parseError, 'Buffer:', buffer);
                 }
             }
 
-            if (lastSeed) {
-                finalSeed = lastSeed; // Update the global finalSeed for the whole process
-            }
-
-            return lastServerImageData; // Return the raw (potentially upscaled) image data from server for next pass
+            return { img: lastServerImageData, seed: lastSeed }; // Return an object with img and seed
         }
 
 
@@ -1807,7 +1879,7 @@
             const hiresScale = parseFloat(hiresScaleInput.value);
             const applyHiresFix = !base64ImageInput.value && hiresScale && hiresScale > 1.0;
 
-            let finalSeed = ''; // Global variable updated by executeGenerationPass
+            let finalSeed = ''; // Local variable to hold the final seed for display
 
             try {
                 let currentImageBase64 = null; 
@@ -1826,7 +1898,9 @@
                 }
 
                 // Pass original width/height as display dimensions for the first pass (no downscaling needed)
-                currentImageBase64 = await executeGenerationPass(firstPassPayload, 1, totalPasses, signal, originalPayload.width, originalPayload.height);
+                const firstPassResult = await executeGenerationPass(firstPassPayload, 1, totalPasses, signal, originalPayload.width, originalPayload.height);
+                currentImageBase64 = firstPassResult.img;
+                finalSeed = firstPassResult.seed || ''; // Capture seed from first pass
 
                 if (!currentImageBase64) {
                     if (!signal.aborted) { 
@@ -1852,9 +1926,12 @@
                     };
 
                     // Pass original width/height as display dimensions for the second pass (downscaling needed)
-                    let secondPassServerImageBase64 = await executeGenerationPass(hiresFixPayload, 2, totalPasses, signal, originalPayload.width, originalPayload.height);
-
-                    if (!secondPassServerImageBase64) {
+                    const secondPassResult = await executeGenerationPass(hiresFixPayload, 2, totalPasses, signal, originalPayload.width, originalPayload.height);
+                    // The image displayed is already handled by executeGenerationPass for the 2nd pass
+                    // We want the seed from the FINAL pass, which is the hires fix pass
+                    finalSeed = secondPassResult.seed || finalSeed; // Update finalSeed with result from hires fix pass
+                    
+                    if (!secondPassResult.img) {
                         if (!signal.aborted) {
                             throw new Error('Hires Fix pass failed to return an image.');
                         }
@@ -1863,8 +1940,10 @@
                 } 
 
                 displayMessage('Generation complete. Image displayed.', 'success');
+                // The seed display is already handled by executeGenerationPass now.
+                // Ensure it stays visible after generation finishes.
                 if (finalSeedDisplay) {
-                    finalSeedDisplay.querySelector('span').textContent = finalSeed;
+                    finalSeedDisplay.style.display = 'block'; 
                 }
 
             } catch (error) {
