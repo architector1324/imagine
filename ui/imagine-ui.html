@@ -1314,7 +1314,7 @@
             guidanceInput.value = (settings && settings.guidance) || '7.0';
             samplerInput.value = (settings && settings.sampler) || 'dpm++ 2m';
             if (seedInput) { 
-                seedInput.value = (settings && settings.seed) || '';
+                seedInput.value = (settings && settings.seed !== null && settings.seed !== undefined) ? String(settings.seed) : '';
             }
             strengthInput.value = (settings && settings.strength) || '0.8';
             streamInput.value = (settings && settings.stream) || '0';
@@ -1662,7 +1662,8 @@
                     numStepsInput.value = meta.steps !== undefined ? meta.steps : '25';
                     guidanceInput.value = meta.guidance !== undefined ? meta.guidance : '7.0';
                     samplerInput.value = meta.sampler || 'dpm++ 2m';
-                    seedInput.value = meta.seed !== undefined ? meta.seed : ''; 
+                    // NEW: Ensure null maps to empty string, and other values are converted to string.
+                    seedInput.value = (meta.seed === null || meta.seed === undefined) ? '' : String(meta.seed);
                     streamInput.value = meta.stream !== undefined ? meta.stream : '0';
                     strengthInput.value = meta.strength !== undefined ? meta.strength : '0.8';
                     clipSkipInput.value = meta.clip !== undefined ? meta.clip : ''; 
@@ -1729,6 +1730,11 @@
         // --- Handle Saving Settings to JSON File ---
         const handleSaveSettingsToFile = () => {
             try {
+                // NEW: Get the seed that was actually used for the displayed image
+                let actualGeneratedSeed = null;
+                if (finalSeedDisplay && finalSeedDisplay.querySelector('span').textContent) {
+                    actualGeneratedSeed = finalSeedDisplay.querySelector('span').textContent;
+                }
                 const outputJson = {
                     meta: {
                         model: currentModelServerPath || null, 
@@ -1738,7 +1744,8 @@
                         steps: parseInt(numStepsInput.value) || 25,
                         guidance: parseFloat(guidanceInput.value) || 7.0,
                         sampler: samplerInput.value || 'dpm++ 2m',
-                        seed: seedInput.value ? String(seedInput.value) : null, 
+                        // UPDATED: Use actual generated seed if available, else use input field (null if empty)
+                        seed: actualGeneratedSeed || (seedInput.value.trim() !== '' ? String(seedInput.value) : null),
                         neg: negativePromptInput.value.trim() || null, 
                         stream: parseInt(streamInput.value) || null,
                         img: base64ImageInput.value ? base64ImageInput.value.substring(IMAGE_DATA_PREFIX.length) : null, 
@@ -1750,8 +1757,17 @@
                         generatedImage.src.substring(IMAGE_DATA_PREFIX.length) : null 
                 };
 
+                // UPDATED: Adjust cleanup logic to explicitly keep 'seed: null'
                 Object.keys(outputJson.meta).forEach(key => {
                     const value = outputJson.meta[key];
+                    // Keep 'seed: null' as an explicit indicator for a random/unspecified seed input.
+                    // For other keys, or if seed is explicitly an empty string (which shouldn't happen with the above logic),
+                    // then delete if null, undefined, empty string, or empty array.
+                    if (key === 'seed' && value === null) {
+                        // Do nothing, keep seed: null
+                        return;
+                    }
+
                     if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '') || (Array.isArray(value) && value.length === 0)) {
                         delete outputJson.meta[key];
                     }
