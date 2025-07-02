@@ -16,6 +16,7 @@ if __name__ == '__main__':
     run_parser = subparsers.add_parser('run', help='SD image generator', add_help=False)
     run_parser.add_argument('-m', '--model', default=imagine_run.DEFAULT_MODEL, type=str, help='SD model')
     run_parser.add_argument('-o', '--output', default=None, type=str, help='Output image')
+    run_parser.add_argument('--meta', action='store_true', help='Save meta json of output image')
     run_parser.add_argument('-w', '--width', default=512, type=int, help='Output image width')
     run_parser.add_argument('-h', '--height', default=512, type=int, help='Output image height')
     run_parser.add_argument('-n', '--steps', default=25, type=int, help='Number of steps')
@@ -31,6 +32,16 @@ if __name__ == '__main__':
     run_parser.add_argument('prompt', nargs='+', type=str, help='Prompt for model')
     run_parser.add_argument('-a', '--address', default='0.0.0.0:5000', type=str, help='Server host address')
     run_parser.add_argument('--help', action='help')
+
+    # info
+    info_parser = subparsers.add_parser('info', help='Get generated image meta information', add_help=False)
+    info_parser.add_argument('img',  type=str, help='Input image')
+    info_parser.add_argument('--help', action='help')
+
+    # convert
+    convert_parser = subparsers.add_parser('convert', help='Convert generated image to json meta and vice versa', add_help=False)
+    convert_parser.add_argument('filename',  type=str, help='JSON metadata or generated image')
+    convert_parser.add_argument('--help', action='help')
 
     # server
     server_parser = subparsers.add_parser('serve', help='SD image generator server', add_help=False)
@@ -51,6 +62,10 @@ if __name__ == '__main__':
         imagine_server.serve(args)
     elif args.command == 'run':
         imagine_run.run(args)
+    elif args.command == 'info':
+        imagine_run.info(args)
+    elif args.command == 'convert':
+        imagine_run.convert(args)
     elif args.command == 'list':
         imagine_server.list_models()
     else:
