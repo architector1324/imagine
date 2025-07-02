@@ -524,9 +524,9 @@
                         <div id="jsonSettings" class="collapsible-content">
                             <div class="flex flex-col items-center gap-2">
                                 <label for="loadJsonFileInput" id="loadSettingsButton" class="file-input-button">
-                                    Load Settings from JSON
+                                    Load Settings from File <!-- RENAMED BUTTON TEXT -->
                                 </label>
-                                <input type="file" id="loadJsonFileInput" accept=".json" class="hidden">
+                                <input type="file" id="loadJsonFileInput" accept=".json,.png" class="hidden"> <!-- ADDED .png ACCEPT -->
                                 <button type="button" id="saveSettingsButton" class="btn-modal-secondary w-full max-w-xs px-6 py-3 text-sm">
                                     Save Settings to JSON
                                 </button>
@@ -722,7 +722,7 @@
                                     placeholder="e.g., 1, 2, 4"
                                 />
                                 <p class="text-xs text-gray-500 mt-2">
-                                    Controls how many layers to skip in CLIP text encoder (1 to 12).
+                                    Controls how many layers to skip in the CLIP text encoder (1 to 12).
                                 </p>
                             </div>
                         </div>
@@ -1044,7 +1044,6 @@
             resetImageDisplayState();
 
 
-            // Attach event listeners
             if (imgUploadInput && hiresScaleInput) { 
                 imgUploadInput.addEventListener('change', (event) => {
                     const file = event.target.files[0];
@@ -1095,18 +1094,13 @@
             }
 
 
-            // JSON Import/Export Event Listeners
+            // JSON/PNG Import/Export Event Listeners
             if (loadSettingsButton && loadJsonFileInput) {
-                console.log('Attaching load settings button change listener.'); 
                 loadJsonFileInput.addEventListener('change', handleLoadSettingsFromFile);
-            } else {
-                console.warn('Could not find loadSettingsButton or loadJsonFileInput. Check their IDs.');
             }
             
             if (saveSettingsButton) {
                 saveSettingsButton.addEventListener('click', handleSaveSettingsToFile);
-            } else {
-                console.warn('Could not find saveSettingsButton. Check its ID.');
             }
 
             // Reset Settings button listener
@@ -1495,52 +1489,155 @@
             }
         };
 
-        // --- Handle Loading Settings from JSON File ---
+        // --- PNG Metadata Parser (Minimal implementation for tEXt/iTXt 'meta' chunk) ---
+        // This is a simplified parser. It assumes 'meta' is in a tEXt or iTXt chunk.
+        // For iTXt, it assumes uncompressed data (Pillow default if not specified).
+        // It does NOT handle zTXt (compressed) chunks.
+        const parsePngMetadata = (arrayBuffer) => {
+            const dataView = new DataView(arrayBuffer);
+            let offset = 8; // Skip PNG signature (8 bytes)
+            const textDecoder = new TextDecoder('utf-8');
+            let metaJsonString = null;
+            let finalImageBase64 = null; // To store the base64 of the image itself
+
+            try {
+                // Read chunks until end of file or 'IEND' chunk
+                while (offset < arrayBuffer.byteLength) {
+                    const length = dataView.getUint32(offset, false); // Length of chunk data
+                    offset += 4;
+                    const typeCode = dataView.getUint32(offset, false); // Chunk type code
+                    offset += 4;
+                    const type = textDecoder.decode(new Uint8Array(arrayBuffer, offset - 4, 4)); // Convert type code to string
+
+                    if (type === 'IEND') break; // End of image
+
+                    // Read data based on chunk type
+                    if (type === 'tEXt' || type === 'iTXt') {
+                        // Find null terminator for keyword
+                        let keywordEnd = -1;
+                        for (let i = 0; i < length; i++) {
+                            if (dataView.getUint8(offset + i) === 0) {
+                                keywordEnd = offset + i;
+                                break;
+                            }
+                        }
+
+                        if (keywordEnd !== -1) {
+                            const keyword = textDecoder.decode(new Uint8Array(arrayBuffer, offset, keywordEnd - offset));
+                            
+                            if (keyword === 'meta') {
+                                let textStart = keywordEnd + 1; // Skip null terminator
+
+                                if (type === 'iTXt') {
+                                    // For iTXt: skip compression flag (1 byte), compression method (1 byte)
+                                    // Then find null terminator for language tag, then skip it
+                                    // Then find null terminator for translated keyword, then skip it
+                                    // Then comes the actual text data.
+                                    textStart += 2; // Skip compression flag and method
+                                    
+                                    // Skip language tag (null terminated)
+                                    let langTagEnd = -1;
+                                    for (let i = 0; i < (length - (textStart - offset)); i++) {
+                                        if (dataView.getUint8(textStart + i) === 0) {
+                                            langTagEnd = textStart + i;
+                                            break;
+                                        }
+                                    }
+                                    if (langTagEnd !== -1) {
+                                        textStart = langTagEnd + 1;
+                                    }
+
+                                    // Skip translated keyword (null terminated)
+                                    let translatedKeywordEnd = -1;
+                                    for (let i = 0; i < (length - (textStart - offset)); i++) {
+                                        if (dataView.getUint8(textStart + i) === 0) {
+                                            translatedKeywordEnd = textStart + i;
+                                            break;
+                                        }
+                                    }
+                                    if (translatedKeywordEnd !== -1) {
+                                        textStart = translatedKeywordEnd + 1;
+                                    }
+                                }
+                                // The remaining data is our JSON string (UTF-8 encoded)
+                                const textBytes = new Uint8Array(arrayBuffer, textStart, length - (textStart - offset));
+                                metaJsonString = textDecoder.decode(textBytes);
+                                
+                                // Since we found the meta chunk, we can assume the rest of the image data
+                                // is for the 'out' field. We'll extract that later from the full file data.
+                                // We don't need to read all other chunks for the image data itself here.
+                            }
+                        }
+                    }
+                    
+                    // Move to the next chunk (skip current chunk's data and CRC)
+                    offset += length + 4; // Data + CRC (4 bytes)
+                }
+
+                return {
+                    meta: metaJsonString ? JSON.parse(metaJsonString) : null,
+                    out: arrayBuffer // Return ArrayBuffer for the image itself, will be converted to base64 later
+                };
+
+            } catch (e) {
+                console.error("Error parsing PNG chunks:", e);
+                throw new Error("Failed to parse PNG metadata. Ensure it's a valid PNG with 'meta' chunk.");
+            }
+        };
+
+
+        // --- Handle Loading Settings from JSON/PNG File ---
         const handleLoadSettingsFromFile = (event) => {
-            console.log('handleLoadSettingsFromFile called.'); 
             const file = event.target.files[0];
             if (!file) {
                 displayMessage('No file selected.', 'info');
-                console.log('No file selected in handleLoadSettingsFromFile.'); 
+                return;
+            }
+
+            const fileName = file.name.toLowerCase();
+            const isJsonFile = fileName.endsWith('.json');
+            const isPngFile = fileName.endsWith('.png');
+
+            if (!isJsonFile && !isPngFile) {
+                displayMessage('Unsupported file type. Please select a JSON or PNG file.', 'error');
+                event.target.value = ''; // Clear file input
                 return;
             }
 
             const reader = new FileReader();
-            reader.onload = (e) => {
-                console.log('FileReader onload triggered.'); 
-                try {
-                    const jsonContent = JSON.parse(e.target.result);
-                    const meta = jsonContent.meta;
-                    const outImageBase64 = jsonContent.out; 
 
-                    console.log('JSON file loaded. (Before meta check)'); 
-                    if (meta) {
-                        console.log('Meta content:', meta); 
-                    } else {
-                        console.log('"meta" object not found in JSON.'); 
+            reader.onload = async (e) => {
+                let jsonContent;
+                let meta;
+                let outImageBase64 = null; // Default to null for both JSON and PNG
+
+                try {
+                    if (isJsonFile) {
+                        jsonContent = JSON.parse(e.target.result);
+                        meta = jsonContent.meta;
+                        outImageBase64 = jsonContent.out; // From JSON, this is already base64 string
+                    } else if (isPngFile) {
+                        // For PNG, e.target.result is an ArrayBuffer
+                        const pngData = parsePngMetadata(e.target.result);
+                        meta = pngData.meta;
+
+                        if (!meta) {
+                            throw new Error('No "meta" chunk found in PNG file.');
+                        }
+
+                        // Convert the ArrayBuffer of the whole PNG to base64 for display
+                        const base64ArrayBuffer = btoa(String.fromCharCode.apply(null, new Uint8Array(pngData.out)));
+                        outImageBase64 = base64ArrayBuffer;
                     }
 
                     if (!meta) {
-                        displayMessage('Invalid JSON format: "meta" object not found.', 'error');
+                        displayMessage('Invalid file format: "meta" object/chunk not found.', 'error');
                         return;
                     }
 
-                    if (typeof meta.prompt === 'string') {
-                        promptInput.value = meta.prompt;
-                    } else {
-                        promptInput.value = '';
-                        displayMessage('Loading error: "prompt" field must be a string.', 'error', 5000);
-                        console.error('Invalid prompt type:', meta.prompt);
-                    }
-                    
-                    if (typeof meta.neg === 'string') {
-                        negativePromptInput.value = meta.neg;
-                    } else {
-                        negativePromptInput.value = '';
-                        displayMessage('Loading error: "negativePrompt" field must be a string.', 'error', 5000);
-                        console.error('Invalid negativePrompt type:', meta.neg);
-                    }
-
+                    // Apply settings to UI
+                    promptInput.value = typeof meta.prompt === 'string' ? meta.prompt : '';
+                    negativePromptInput.value = typeof meta.neg === 'string' ? meta.neg : '';
                     widthInput.value = meta.width !== undefined ? meta.width : '512';
                     heightInput.value = meta.height !== undefined ? meta.height : '512';
                     numStepsInput.value = meta.steps !== undefined ? meta.steps : '25';
@@ -1557,6 +1654,7 @@
                         modelSelect.value = currentModelServerPath;
                     }
 
+                    // Handle input image (img2img) if present in metadata
                     if (meta.img) {
                         const inputImageUrl = IMAGE_DATA_PREFIX + meta.img;
                         imagePreview.src = inputImageUrl;
@@ -1570,6 +1668,7 @@
                         hiresScaleInput.disabled = false; 
                     }
 
+                    // Handle generated output image display
                     if (outImageBase64) {
                         const generatedImageUrl = IMAGE_DATA_PREFIX + outImageBase64;
                         generatedImage.src = generatedImageUrl;
@@ -1579,7 +1678,7 @@
                         if (meta.seed && finalSeedDisplay) {
                             finalSeedDisplay.querySelector('span').textContent = meta.seed;
                             finalSeedDisplay.style.display = 'block';
-                        } else if (jsonContent.seed && finalSeedDisplay) { 
+                        } else if (jsonContent && jsonContent.seed && finalSeedDisplay) { // Fallback for old JSON format
                             finalSeedDisplay.querySelector('span').textContent = jsonContent.seed;
                             finalSeedDisplay.style.display = 'block';
                         }
@@ -1594,13 +1693,18 @@
                     imageFrame.style.setProperty('--image-aspect-ratio', `${width}/${height}`);
                     updateGenerateButtonState(); 
                 } catch (error) {
-                    console.error('Error loading or parsing JSON file:', error);
+                    console.error('Error loading or parsing file:', error);
                     displayMessage(`Error loading settings: ${error.message}`, 'error');
                 } finally {
                     event.target.value = '';
                 }
             };
-            reader.readAsText(file);
+
+            if (isJsonFile) {
+                reader.readAsText(file);
+            } else if (isPngFile) {
+                reader.readAsArrayBuffer(file);
+            }
         };
 
         // --- Handle Saving Settings to JSON File ---
