@@ -5,6 +5,7 @@ import argparse
 
 import imagine_run
 import imagine_server
+import imagine_enhance
 
 
 if __name__ == '__main__':
@@ -43,6 +44,14 @@ if __name__ == '__main__':
     convert_parser.add_argument('filename',  type=str, help='JSON metadata or generated image')
     convert_parser.add_argument('--help', action='help')
 
+    # enhance
+    enhance_parser = subparsers.add_parser('enhance', help='Prompt enhancer with LLM', add_help=False)
+    enhance_parser.add_argument('-m', '--model', default=imagine_enhance.DEFAULT_MODEL, type=str, help='LLM model to use')
+    enhance_parser.add_argument('-s', '--stream', action='store_true', default=False, help='Stream output')
+    enhance_parser.add_argument('-n', '--neg', action='store_true', default=False, help='Include negative prompt')
+    enhance_parser.add_argument('prompt', nargs='+', type=str, help='Simplified prompt')
+    enhance_parser.add_argument('--help', action='help')
+
     # server
     server_parser = subparsers.add_parser('serve', help='SD image generator server', add_help=False)
     server_parser.add_argument('--host', default='0.0.0.0', type=str, help='Server host address')
@@ -64,6 +73,8 @@ if __name__ == '__main__':
         imagine_run.run(args)
     elif args.command == 'info':
         imagine_run.info(args)
+    elif args.command == 'enhance':
+        imagine_enhance.enhance(args)
     elif args.command == 'convert':
         imagine_run.convert(args)
     elif args.command == 'list':
