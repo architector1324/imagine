@@ -2019,6 +2019,7 @@
             const applyHiresFix = !base64ImageInput.value && hiresScale && hiresScale > 1.0;
 
             let finalSeed = ''; // Local variable to hold the final seed for display
+            let firstPassActualSeed = undefined; // NEW: To store the actual seed used by the server in the first pass
 
             try {
                 let currentImageBase64 = null; 
@@ -2039,7 +2040,8 @@
                 // Pass original width/height as display dimensions for the first pass (no downscaling needed)
                 const firstPassResult = await executeGenerationPass(firstPassPayload, 1, totalPasses, signal, originalPayload.width, originalPayload.height);
                 currentImageBase64 = firstPassResult.img;
-                finalSeed = firstPassResult.seed || ''; // Capture seed from first pass
+                finalSeed = firstPassResult.seed || ''; // Capture seed from first pass                
+                firstPassActualSeed = firstPassResult.seed; // NEW: Store the actual seed for the second pass
 
                 if (!currentImageBase64) {
                     if (!signal.aborted) { 
@@ -2060,7 +2062,8 @@
                         img: upscaledImageBase64, 
                         width: upscaledWidth,    
                         height: upscaledHeight,
-                        strength: 0.35, 
+                        strength: 0.35,
+                        seed: firstPassActualSeed, // IMPORTANT NEW: Pass the actual seed from the first pass
                         stream: originalPayload.stream 
                     };
 
