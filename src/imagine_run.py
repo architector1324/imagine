@@ -2,9 +2,7 @@ import io
 import os
 import json
 import base64
-import random
 import datetime
-import argparse
 import requests
 
 from PIL import Image

@@ -5,10 +5,10 @@ import queue
 import torch
 import base64
 import random
-import argparse
 import threading
 import diffusers
-import transformers
+
+import imagine_server_defs
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import socketserver
@@ -17,14 +17,12 @@ from PIL import Image
 
 # settings
 DEFAULT_FP_PREC = torch.float16
-DEFAULT_DEVICE = 'cuda'
-DEFAULT_MODELS_PATH = '~/.imagine/models'
 
 os.environ['HF_HUB_OFFLINE'] = '1'
 
-dev = DEFAULT_DEVICE
 fp_prec = DEFAULT_FP_PREC
-models_path = DEFAULT_MODELS_PATH
+dev = imagine_server_defs.DEFAULT_DEVICE
+models_path = imagine_server_defs.DEFAULT_MODELS_PATH
 
 SAMPLERS = {
     'ddim': diffusers.DDIMScheduler,
@@ -398,9 +396,3 @@ def serve(args):
         print('\nServer is shutting down.')
         httpd.shutdown()
         httpd.server_close()
-
-
-def list_models():
-    print('MODELS:')
-    for model in get_models():
-        print(model)
