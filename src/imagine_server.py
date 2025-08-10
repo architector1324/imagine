@@ -260,7 +260,7 @@ def get_models():
     return model_names
 
 class SDRequestHandler(BaseHTTPRequestHandler):
-     # Handle OPTIONS preflight requests
+    # Handle OPTIONS preflight requests
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')

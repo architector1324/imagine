@@ -53,15 +53,17 @@ Respond only with a single JSON object.
 
 
 def enhance(args):
+    client = ollama.Client(args.address)
+
     # generate detailed prompt
     prompt = ' '.join(args.prompt)
     # prompt = f'Rewrite the following input into a concise, vivid, and specific prompt for an image generation model (max 75 words): {text}'
     system_prompt = PROMPT_BOTH_GEN_SYS if args.neg else PROMPT_GEN_SYS
 
     if not args.stream:
-        prompt_i = ollama.generate(model=args.model, prompt=prompt, system=system_prompt)['response'].strip()
+        prompt_i = client.generate(model=args.model, prompt=prompt, system=system_prompt)['response'].strip()
         print(prompt_i)
     else:
-        prompt_i_s = ollama.generate(model=args.model, prompt=prompt, system=system_prompt, stream=True)
+        prompt_i_s = client.generate(model=args.model, prompt=prompt, system=system_prompt, stream=True)
         for t in prompt_i_s:
             print(t['response'], end='', flush=True)

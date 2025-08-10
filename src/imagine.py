@@ -51,6 +51,7 @@ if __name__ == '__main__':
     enhance_parser.add_argument('-m', '--model', default=imagine_enhance.DEFAULT_MODEL, type=str, help='LLM model to use')
     enhance_parser.add_argument('-s', '--stream', action='store_true', default=False, help='Stream output')
     enhance_parser.add_argument('-n', '--neg', action='store_true', default=False, help='Include negative prompt')
+    enhance_parser.add_argument('-a', '--address', default='0.0.0.0:11434', type=str, help='Ollama server host address')
     enhance_parser.add_argument('prompt', nargs='+', type=str, help='Simplified prompt')
     enhance_parser.add_argument('--help', action='help')
 
